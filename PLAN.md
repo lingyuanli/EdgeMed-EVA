@@ -76,3 +76,4 @@
 | 2026-08-31 | Hugging Face 下载改为 SSH 反向代理断点续传 | 远端直连/HF API 不稳定，用户提供本地代理 | 仅改变传输路径，不改变 revision、字节或内容哈希 |
 | 2026-08-31 | Qwen3.5-4B 固定到 HF revision `851bf6e8…`，两片权重 SHA-256 与 HF 下载收据一致 | 排除本地目录漂移或损坏 | run contract 新增 model source manifest 哈希 |
 | 2026-08-31 | 首次 archive 字节门失败；确认两个被 SSH 中断遗留的 orphan `curl` 与 aria2 并发写同一目标 | 文件多出 238,483,190 bytes 且 ZIP 尾目录损坏；属于传输控制面事故 | 精确终止本任务遗留 PID，坏文件隔离保留，单 writer 从零重下；不改变科学配置、不消耗实验 revision |
+| 2026-08-31 | 首次 14 条 MCQ smoke 为 100% invalid parse；固定 Qwen README 与 Jinja 证明默认 thinking 消耗了 16-token final-answer 预算 | 输出均停在思考前缀，不能解释为 0% 模型正确率 | 按模型官方接口设置 `enable_thinking=False` 并写入 contract；Med-CMR prompt、样本、答案隔离与 token 上限不变，重新 smoke |

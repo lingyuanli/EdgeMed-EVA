@@ -132,6 +132,7 @@ def main() -> None:
         "prompt_sha256": prompt_hash(args.kind),
         "max_new_tokens": max_new_tokens,
         "do_sample": False,
+        "thinking_mode": False,
         "dtype": "float16",
         "quantization": "nf4-double-quant",
         "attention": "eager",
@@ -235,6 +236,7 @@ def main() -> None:
                 messages,
                 tokenize=True,
                 add_generation_prompt=True,
+                enable_thinking=False,
                 return_dict=True,
                 return_tensors="pt",
             )

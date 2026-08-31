@@ -18,6 +18,7 @@
   "generation": {
     "do_sample": false,
     "max_new_tokens": 16,
+    "thinking_mode": "disabled through the pinned Qwen3.5 chat template so the MCQ response budget contains the final answer",
     "dtype": "float16",
     "quantization": "bitsandbytes NF4 double quantization",
     "attention": "eager"
