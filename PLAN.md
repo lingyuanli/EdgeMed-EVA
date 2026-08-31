@@ -39,7 +39,7 @@
 - hardware assumption：1× Tesla V100-SXM2-32GB，10 CPU cores，62GB RAM；2026-08-31 下载中复核 `/home/ubuntu` 可用 101,857,734,656 bytes，覆盖约 6.9GB archive、约 6.9GB 解包和运行产物。
 - smoke test：需要。先解包结构 QA，再运行每类至少 2 个样本且总量不超过 20 的无答案可见 smoke。
 - smoke command：`PYTHONPATH=src .venv/bin/python -m edgemed_bench.run --kind mcq --manifest /home/ubuntu/data/medcmr/release_a9b2d6e6/manifests/mcq.jsonl --data-root /home/ubuntu/data/medcmr/release_a9b2d6e6/raw --model-path /home/ubuntu/models/Qwen3.5-4B --model-source-manifest baselines/local/qwen35-4b-medcmr-b0/source_manifest.json --run-dir runs/qwen35-4b-medcmr-b0-mcq-contract-smoke-20260831T0421Z --sample-id-file runs/_selections/medcmr-mcq-2-per-task.txt --sync-every 1`。
-- main run command：同一 runner、model/data/source contract，去掉 `--sample-id-file`，run dir 固定为 `runs/qwen35-4b-medcmr-b0-mcq-full-20260831T0427Z`，`--sync-every 10`；通过 tmux `medcmr-b0-mcq-full` 持久运行。
+- main run command：`scripts/run-medcmr-b0-mcq-full.sh`；同一 runner、model/data/source contract，去掉 `--sample-id-file`，run dir 固定为 `runs/qwen35-4b-medcmr-b0-mcq-full-20260831T0427Z`，`--sync-every 10`；通过 tmux `medcmr-b0-mcq-full` 持久运行。仅当原 contract 不变且需要精确续跑时设置 `EDGEMED_EXACT_RESUME=1`。
 - expected runtime / budget：最终 14 条 contract smoke 推理 17.33 秒（模型加载外），线性点估计约 5.7 小时；考虑图像/token 差异，操作预算 6–8 小时。
 - durable logs：`runs/<run_id>/stderr.log`、`events.jsonl`、`predictions.jsonl`。
 - fastest failure signals：字段/图像缺失、模型看到参考答案、解析合法率不足、V100 OOM、judge prompt/模型不匹配。
