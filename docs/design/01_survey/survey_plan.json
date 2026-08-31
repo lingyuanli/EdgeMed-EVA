@@ -1,0 +1,30 @@
+{
+  "schema_version": "med-survey/v1",
+  "status": "completed_for_design",
+  "completed_at": "2026-08-31",
+  "research_question": "Can a 4B native multimodal model use verifiable visual evidence and selective tools to outperform strong Med-CMR baselines under leakage-controlled evaluation?",
+  "phases": [
+    {
+      "name": "broad_search",
+      "target_sources": "12-20",
+      "actual_sources": 20,
+      "artifact": "paper_ledger.jsonl"
+    },
+    {
+      "name": "deep_read",
+      "target_papers": "5-8",
+      "actual_papers": 7,
+      "artifact": "paper_cards/"
+    },
+    {
+      "name": "synthesis",
+      "artifacts": [
+        "claim_evidence_matrix.md",
+        "contradiction_map.md",
+        "gap_map.md",
+        "skeptic_report.md"
+      ]
+    }
+  ],
+  "result_boundary": "Survey supports method selection only; it contains no measured project result."
+}

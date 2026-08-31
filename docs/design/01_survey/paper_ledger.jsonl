@@ -1,0 +1,20 @@
+{"source_id":"S01","title":"Med-CMR","category":"benchmark","deep_read":true,"url":"https://github.com/LsmnBmnc/Med-CMR"}
+{"source_id":"S02","title":"MMedAgent","category":"medical_agent","deep_read":true,"url":"https://aclanthology.org/2024.findings-emnlp.510.pdf"}
+{"source_id":"S03","title":"DeepEyes","category":"vision_tool_rl","deep_read":true,"url":"https://arxiv.org/abs/2505.14362"}
+{"source_id":"S04","title":"What Does Vision Tool-use RL Really Learn?","category":"vision_tool_analysis","deep_read":true,"url":"https://arxiv.org/abs/2602.01334"}
+{"source_id":"S05","title":"MAIRA-2","category":"grounded_generation","deep_read":true,"url":"https://arxiv.org/abs/2406.04449"}
+{"source_id":"S06","title":"MMedPO","category":"preference_optimization","deep_read":true,"url":"https://arxiv.org/abs/2412.06141"}
+{"source_id":"S07","title":"ChestX-Reasoner","category":"process_supervision","deep_read":true,"url":"https://arxiv.org/abs/2504.20930"}
+{"source_id":"S08","title":"MedTrinity-25M","category":"grounded_data","deep_read":false,"url":"https://arxiv.org/abs/2408.02900"}
+{"source_id":"S09","title":"MedXpertQA","category":"benchmark","deep_read":false,"url":"https://arxiv.org/abs/2501.18362"}
+{"source_id":"S10","title":"GMAI-MMBench","category":"benchmark","deep_read":false,"url":"https://proceedings.neurips.cc/paper_files/paper/2024/file/ab7e02fd60e47e2a379d567f6b54f04e-Paper-Datasets_and_Benchmarks_Track.pdf"}
+{"source_id":"S11","title":"MedHELM","category":"evaluation","deep_read":false,"url":"https://medhelm.org/"}
+{"source_id":"S12","title":"VILA-M3","category":"medical_vlm","deep_read":false,"url":"https://openaccess.thecvf.com/content/CVPR2025/html/Nath_VILA-M3_Enhancing_Vision-Language_Models_with_Medical_Expert_Knowledge_CVPR_2025_paper.html"}
+{"source_id":"S13","title":"Lingshu","category":"medical_vlm","deep_read":false,"url":"https://arxiv.org/abs/2506.07044"}
+{"source_id":"S14","title":"MedGemma","category":"medical_vlm","deep_read":false,"url":"https://github.com/google-health/medgemma"}
+{"source_id":"S15","title":"VoxelPrompt","category":"grounding","deep_read":false,"url":"https://arxiv.org/abs/2410.08397"}
+{"source_id":"S16","title":"MedRAX","category":"medical_agent","deep_read":false,"url":"https://arxiv.org/abs/2502.02673"}
+{"source_id":"S17","title":"MultiMedEval","category":"evaluation","deep_read":false,"url":"https://proceedings.mlr.press/v250/royer24a.html"}
+{"source_id":"S18","title":"HEAL-MedVQA","category":"grounded_vqa","deep_read":false,"url":"https://www.ijcai.org/proceedings/2025/0853.pdf"}
+{"source_id":"S19","title":"Qwen3.5-4B","category":"backbone","deep_read":false,"url":"https://huggingface.co/Qwen/Qwen3.5-4B"}
+{"source_id":"S20","title":"NVIDIA BF16 and Tesla V100 documentation","category":"hardware","deep_read":false,"url":"https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/mathematical-functions.html"}

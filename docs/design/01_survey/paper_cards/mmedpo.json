@@ -1,0 +1,18 @@
+{
+  "source_id": "S06",
+  "title": "MMedPO: Aligning Medical Vision-Language Models with Clinical Visual Preferences",
+  "read_level": "full_pdf",
+  "source": "https://arxiv.org/abs/2412.06141",
+  "method": "Constructs plausible but visually inconsistent dispreferred responses and applies clinically weighted preference optimization",
+  "evidence": [
+    "Targets lesion omission and visually unsupported medical statements",
+    "Uses parameter-efficient adaptation on a 7B medical VLM",
+    "Supports preference pairs as an intermediate stage after supervised alignment"
+  ],
+  "limitations": [
+    "Clinical relevance weights and visual confidence depend on external models/tools",
+    "Automatic preference generation can create circular validation",
+    "Reported improvements do not prove evidence causality"
+  ],
+  "transfer_decision": "Use grounded negative pairs, but derive primary labels from provenance-backed annotations and audit synthetic negatives manually."
+}

@@ -1,0 +1,18 @@
+{
+  "source_id": "S07",
+  "title": "ChestX-Reasoner: Advancing Radiology Foundation Models with Reasoning through Step-by-Step Verification",
+  "read_level": "full_pdf",
+  "source": "https://arxiv.org/abs/2504.20930",
+  "method": "Combines answer and reasoning supervised fine-tuning with reinforcement learning using process-oriented clinical rewards",
+  "evidence": [
+    "Reports that answer supervision helps domain alignment",
+    "Reports additional benefit from process-oriented reinforcement learning",
+    "Shows weaker results for RL-only and reasoning-only variants"
+  ],
+  "limitations": [
+    "Centered on chest X-ray reasoning",
+    "Process labels are mined from reports and can inherit report biases",
+    "Cross-modality generalization is unproven"
+  ],
+  "transfer_decision": "Order training as answer/evidence SFT then preference/process optimization; allow RL only after deterministic gains are established."
+}

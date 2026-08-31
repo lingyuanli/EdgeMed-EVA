@@ -1,0 +1,17 @@
+{
+  "source_id": "S04",
+  "title": "What Does Vision Tool-use Reinforcement Learning Really Learn?",
+  "read_level": "full_pdf",
+  "source": "https://arxiv.org/abs/2602.01334",
+  "method": "Decomposes tool-use RL changes into tool-free intrinsic drift, tool-induced gain/harm, policy selection, and tool execution quality",
+  "evidence": [
+    "Finds that aggregate improvements can be dominated by intrinsic learning without tool use",
+    "Shows tool training can mainly reduce tool-induced harm and schema interference",
+    "Provides a decomposition suited to same-checkpoint causal evaluation"
+  ],
+  "limitations": [
+    "Conclusions are tied to studied models, tasks, and crop/zoom tools",
+    "Does not remove the possibility of genuine tool gains on selected medical cases"
+  ],
+  "transfer_decision": "Make tool-free versus tool-enabled decomposition a release gate; never use tool-call frequency as the primary success metric."
+}

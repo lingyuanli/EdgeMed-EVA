@@ -1,0 +1,18 @@
+{
+  "source_id": "S05",
+  "title": "MAIRA-2: Grounded Radiology Report Generation",
+  "read_level": "full_pdf",
+  "source": "https://arxiv.org/abs/2406.04449",
+  "method": "Generates atomic report sentences with optional bounding boxes from current, lateral, prior images and text context",
+  "evidence": [
+    "Separates logical precision/recall from spatial grounding precision/recall",
+    "Demonstrates grounded medical generation with multi-image context",
+    "Uses normalized spatial references suitable for structured evidence packets"
+  ],
+  "limitations": [
+    "Sentence-level evaluation can miss internal or partial errors",
+    "Grounding does not establish clinical readiness",
+    "Chest radiography is narrower than Med-CMR"
+  ],
+  "transfer_decision": "Use atomic evidence statements and boxes, but independently score localization, observation correctness, entailment, and final answers."
+}

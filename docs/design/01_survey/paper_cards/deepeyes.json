@@ -1,0 +1,18 @@
+{
+  "source_id": "S03",
+  "title": "DeepEyes: Incentivizing Visual Reasoning through Reinforcement Learning",
+  "read_level": "full_pdf",
+  "source": "https://arxiv.org/abs/2505.14362",
+  "method": "Interleaved text-image crop-and-zoom trajectories trained with outcome-oriented reinforcement learning and format/tool rewards",
+  "evidence": [
+    "Defines active visual perception as a learnable trajectory",
+    "Filters data to retain examples where visual tools have plausible utility",
+    "Reports improvements on high-resolution visual question answering"
+  ],
+  "limitations": [
+    "Outcome gains do not by themselves identify tool-induced causal gains",
+    "Tool-use formatting and additional compute are confounders",
+    "Medical complex reasoning is not the central evaluation setting"
+  ],
+  "transfer_decision": "Adopt selective crop trajectories and utility filtering; require same-checkpoint tool-free controls and tool-harm accounting."
+}

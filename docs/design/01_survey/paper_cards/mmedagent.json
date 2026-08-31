@@ -1,0 +1,18 @@
+{
+  "source_id": "S02",
+  "title": "MMedAgent: Learning to Use Medical Tools with Multi-modal Agent",
+  "read_level": "full_pdf",
+  "source": "https://aclanthology.org/2024.findings-emnlp.510.pdf",
+  "method": "Instruction-tuned multimodal action planner and result aggregator using six medical tools over seven task types",
+  "evidence": [
+    "Uses explicit Thought, Action, and Value trajectories",
+    "Covers grounding, segmentation, classification, report generation, retrieval, and VQA tools",
+    "Demonstrates that one MLLM can learn tool selection and aggregation"
+  ],
+  "limitations": [
+    "Multi-task evaluation is small relative to Med-CMR",
+    "Seven tasks do not cover Med-CMR's twelve imaging modalities",
+    "Specialist-tool errors and orchestration cost can compound"
+  ],
+  "transfer_decision": "Reuse action schema and aggregation concepts, but start with deterministic crop/zoom and add specialist tools only after error-driven oracle studies."
+}

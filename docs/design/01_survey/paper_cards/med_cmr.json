@@ -1,0 +1,18 @@
+{
+  "source_id": "S01",
+  "title": "Med-CMR: A Fine-Grained Benchmark Integrating Visual Evidence and Clinical Logic for Medical Complex Reasoning",
+  "read_level": "full_pdf",
+  "source": "/Users/xxxiaoling/Downloads/Gong et al. - Med-CMR A Fine-Grained Benchmark Integrating Visual Evidence and Clinical Logic for Medical Complex.pdf",
+  "method": "20,653-question multimodal medical complex-reasoning benchmark with MCQ and open-ended tracks across seven dimensions",
+  "evidence": [
+    "16,655 MCQ and 3,998 open-ended questions",
+    "Open-ended rubric emphasizes visual accuracy and ground-truth match",
+    "Reported errors concentrate in fine-grained recognition, evidence integration, and medical long-tail knowledge"
+  ],
+  "limitations": [
+    "Public GitHub repository currently does not expose a complete data and evaluator package",
+    "LLM-based open-ended judging requires independent reliability checks",
+    "Paper-reported model scores are not automatically comparable with future local runs"
+  ],
+  "transfer_decision": "Use as target benchmark and dimension taxonomy; gate all execution on data/evaluator availability and separate paper-reported from reproduced scores."
+}
