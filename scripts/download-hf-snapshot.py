@@ -17,10 +17,14 @@ def load_token(env_file: Path | None) -> None:
             continue
         key, value = line.split("=", 1)
         key = key.removeprefix("export ").strip()
-        if key in {"HF_TOKEN", "HUGGING_FACE_HUB_TOKEN"}:
+        if key in {
+            "HF_TOKEN",
+            "HUGGING_FACE_HUB_TOKEN",
+            "HUGGINGFACE_HUB_TOKEN",
+        }:
             os.environ["HF_TOKEN"] = value.strip().strip("'\"")
             return
-    raise RuntimeError(f"No Hugging Face token variable found in {env_file}")
+    raise RuntimeError(f"No recognized Hugging Face token variable found in {env_file}")
 
 
 def main() -> None:

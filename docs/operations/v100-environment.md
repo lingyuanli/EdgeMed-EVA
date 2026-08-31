@@ -56,7 +56,7 @@ python scripts/download-hf-snapshot.py \
   --max-workers 1
 ```
 
-如需读取 token，可用 `--env-file` 指定文件。脚本只将 `HF_TOKEN` 或 `HUGGING_FACE_HUB_TOKEN` 写入当前进程环境，不打印值。`.env` 必须保持权限 `600` 且不能提交。
+如需读取 token，可用 `--env-file` 指定文件。脚本识别 `HF_TOKEN`、`HUGGING_FACE_HUB_TOKEN` 和 `HUGGINGFACE_HUB_TOKEN`，只将值写入当前进程环境且不打印。`.env` 必须保持权限 `600` 且不能提交。
 
 ## 复验
 
