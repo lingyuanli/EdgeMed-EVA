@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-08-31
-当前主阶段：`setup`
+当前主阶段：`execution`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -38,9 +38,9 @@
 - required download：官方 `dataset.zip`；固定 revision，顺序下载并校验 LFS SHA-256。当前经本地 `127.0.0.1:7890` 到远端回环 `127.0.0.1:17890` 的 SSH 反向隧道断点续传，仅该下载显式使用代理。
 - hardware assumption：1× Tesla V100-SXM2-32GB，10 CPU cores，62GB RAM；2026-08-31 下载中复核 `/home/ubuntu` 可用 101,857,734,656 bytes，覆盖约 6.9GB archive、约 6.9GB 解包和运行产物。
 - smoke test：需要。先解包结构 QA，再运行每类至少 2 个样本且总量不超过 20 的无答案可见 smoke。
-- smoke command：实现后写入本计划修订日志。
-- main run command：实现和 smoke 通过后冻结。
-- expected runtime / budget：由 20 样本实测吞吐外推；在吞吐证据前不承诺总时长。
+- smoke command：`PYTHONPATH=src .venv/bin/python -m edgemed_bench.run --kind mcq --manifest /home/ubuntu/data/medcmr/release_a9b2d6e6/manifests/mcq.jsonl --data-root /home/ubuntu/data/medcmr/release_a9b2d6e6/raw --model-path /home/ubuntu/models/Qwen3.5-4B --model-source-manifest baselines/local/qwen35-4b-medcmr-b0/source_manifest.json --run-dir runs/qwen35-4b-medcmr-b0-mcq-contract-smoke-20260831T0421Z --sample-id-file runs/_selections/medcmr-mcq-2-per-task.txt --sync-every 1`。
+- main run command：同一 runner、model/data/source contract，去掉 `--sample-id-file`，run dir 固定为 `runs/qwen35-4b-medcmr-b0-mcq-full-20260831T0427Z`，`--sync-every 10`；通过 tmux `medcmr-b0-mcq-full` 持久运行。
+- expected runtime / budget：最终 14 条 contract smoke 推理 17.33 秒（模型加载外），线性点估计约 5.7 小时；考虑图像/token 差异，操作预算 6–8 小时。
 - durable logs：`runs/<run_id>/stderr.log`、`events.jsonl`、`predictions.jsonl`。
 - fastest failure signals：字段/图像缺失、模型看到参考答案、解析合法率不足、V100 OOM、judge prompt/模型不匹配。
 
@@ -78,3 +78,4 @@
 | 2026-08-31 | 首次 archive 字节门失败；确认两个被 SSH 中断遗留的 orphan `curl` 与 aria2 并发写同一目标 | 文件多出 238,483,190 bytes 且 ZIP 尾目录损坏；属于传输控制面事故 | 精确终止本任务遗留 PID，坏文件隔离保留，单 writer 从零重下；不改变科学配置、不消耗实验 revision |
 | 2026-08-31 | 首次 14 条 MCQ smoke 为 100% invalid parse；固定 Qwen README 与 Jinja 证明默认 thinking 消耗了 16-token final-answer 预算 | 输出均停在思考前缀，不能解释为 0% 模型正确率 | 按模型官方接口设置 `enable_thinking=False` 并写入 contract；Med-CMR prompt、样本、答案隔离与 token 上限不变，重新 smoke |
 | 2026-08-31 | non-thinking smoke 中 10/14 为单字母，3/14 以明确 `A)`–`E)` 标签开头，1/14 被 16 tokens 截断；论文仅披露 regex extraction | 严格整行 parser 与任意 16-token cap 造成实现性 parse loss | 冻结行首 option-label regex 和 64-token MCQ 上限；不从正文猜字母、不依据正确率调参，执行最终 contract smoke |
+| 2026-08-31 | 最终 64-token contract smoke：14/14 完成，13/14 可解析，17.33 秒，峰值 3,419 MiB；256-token 诊断仍使同一格式失败样本截断 | 继续增加 token 不能解决该模型的 prompt 不遵循 | 保持 64-token contract，将该类输出计 invalid；允许启动全量 16,655 MCQ |

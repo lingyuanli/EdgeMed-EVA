@@ -5,7 +5,7 @@
 - baseline id：`qwen35-4b-medcmr-b0`
 - route：`reproduce`
 - owner stage：`baseline`
-- current phase：`setup`
+- current phase：`execution`
 
 ## Core
 
@@ -13,10 +13,10 @@
 - [x] dataset schema、内部 split、图像数量和答案字段已核验
 - [ ] metric contract 已完整冻结；open evaluator 不再有关键未知项
 - [x] `PLAN.md` 已记录 route、来源、预期产物、接受条件和 fallback
-- [ ] 官方 archive 已按固定 revision 下载并通过 SHA-256/数量核验
-- [ ] runner/evaluator 已实现并通过测试
-- [ ] bounded smoke 已运行一次且产物完整
-- [ ] real run 决策已根据 smoke 吞吐和磁盘证据记录
+- [x] 官方 archive 已按固定 revision 下载并通过 SHA-256/数量核验
+- [x] runner/evaluator 已实现并通过测试
+- [x] bounded smoke 已运行一次且产物完整
+- [x] real run 决策已根据 smoke 吞吐和磁盘证据记录
 - [ ] 正式运行已完成，预期结果文件与指标齐全
 - [ ] 逐样本结果可独立复算且 verification report 完成
 - [ ] baseline 已接受、降级或阻塞，并留下 durable note
@@ -36,8 +36,8 @@
 - [x] remote working directory confirmed
 - [x] V100 environment and Qwen3.5-4B model smoke verified
 - [x] dataset path and free-space budget confirmed
-- [ ] exact run command/config frozen
-- [ ] durable log and checkpoint/resume paths verified
+- [x] exact run command/config frozen
+- [x] durable log and checkpoint/resume paths verified
 
 ## Closeout
 
