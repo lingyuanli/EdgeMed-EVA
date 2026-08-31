@@ -79,3 +79,4 @@
 | 2026-08-31 | 首次 14 条 MCQ smoke 为 100% invalid parse；固定 Qwen README 与 Jinja 证明默认 thinking 消耗了 16-token final-answer 预算 | 输出均停在思考前缀，不能解释为 0% 模型正确率 | 按模型官方接口设置 `enable_thinking=False` 并写入 contract；Med-CMR prompt、样本、答案隔离与 token 上限不变，重新 smoke |
 | 2026-08-31 | non-thinking smoke 中 10/14 为单字母，3/14 以明确 `A)`–`E)` 标签开头，1/14 被 16 tokens 截断；论文仅披露 regex extraction | 严格整行 parser 与任意 16-token cap 造成实现性 parse loss | 冻结行首 option-label regex 和 64-token MCQ 上限；不从正文猜字母、不依据正确率调参，执行最终 contract smoke |
 | 2026-08-31 | 最终 64-token contract smoke：14/14 完成，13/14 可解析，17.33 秒，峰值 3,419 MiB；256-token 诊断仍使同一格式失败样本截断 | 继续增加 token 不能解决该模型的 prompt 不遵循 | 保持 64-token contract，将该类输出计 invalid；允许启动全量 16,655 MCQ |
+| 2026-08-31 | 全量 MCQ 通过 tmux 启动，run contract `7de0a22e…`；首轮检查 predictions 从 47 增至 61，真实 Python/GPU/log 均移动 | 跨过仅有控制面状态的假运行边界 | 状态保持 `running`；完成前不报告正式准确率，收据见 baseline `execution.md` |
