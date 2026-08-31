@@ -75,3 +75,4 @@
 | 2026-08-31 | 实现 source-pinned 数据准备、无答案推理面、Qwen runner、MCQ scorer 与 exact-resume 校验 | 让正式运行可复算且不向 runner 暴露参考答案 | 等待远端 pytest、数据 SHA 和 bounded smoke 后冻结主命令 |
 | 2026-08-31 | Hugging Face 下载改为 SSH 反向代理断点续传 | 远端直连/HF API 不稳定，用户提供本地代理 | 仅改变传输路径，不改变 revision、字节或内容哈希 |
 | 2026-08-31 | Qwen3.5-4B 固定到 HF revision `851bf6e8…`，两片权重 SHA-256 与 HF 下载收据一致 | 排除本地目录漂移或损坏 | run contract 新增 model source manifest 哈希 |
+| 2026-08-31 | 首次 archive 字节门失败；确认两个被 SSH 中断遗留的 orphan `curl` 与 aria2 并发写同一目标 | 文件多出 238,483,190 bytes 且 ZIP 尾目录损坏；属于传输控制面事故 | 精确终止本任务遗留 PID，坏文件隔离保留，单 writer 从零重下；不改变科学配置、不消耗实验 revision |
