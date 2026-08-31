@@ -30,6 +30,7 @@ def load_token(env_file: Path | None) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo-id", default="Qwen/Qwen3.5-4B")
+    parser.add_argument("--repo-type", choices=("model", "dataset", "space"), default="model")
     parser.add_argument("--local-dir", type=Path, required=True)
     parser.add_argument("--revision", default="main")
     parser.add_argument("--env-file", type=Path)
@@ -42,6 +43,7 @@ def main() -> None:
 
     path = snapshot_download(
         repo_id=args.repo_id,
+        repo_type=args.repo_type,
         local_dir=args.local_dir,
         revision=args.revision,
         max_workers=args.max_workers,

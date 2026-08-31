@@ -1,0 +1,50 @@
+{
+  "schema_version": "edgemed-metric-contract/v1",
+  "baseline_id": "qwen35-4b-medcmr-b0",
+  "baseline_variant_id": "direct_mcq",
+  "task": "Med-CMR multiple-choice zero-shot multimodal reasoning",
+  "dataset": {
+    "repo_id": "aaassddaadf/Med-CMR",
+    "revision": "a9b2d6e610c6c5dcf4f3e5aa89c7ec9fd7a05b73",
+    "archive_sha256": "8495f3b6b2901a095918ab27c600e42da7287a87f6aea490912ba60d27de3775",
+    "split": "released public benchmark; no split field",
+    "expected_mcq_samples": 16655
+  },
+  "preprocessing": {
+    "prompt": "Med-CMR supplement MCQ response generation prompt",
+    "image_processor": "Qwen/Qwen3.5-4B pinned local processor defaults",
+    "reference_fields_visible_to_runner": false
+  },
+  "generation": {
+    "do_sample": false,
+    "max_new_tokens": 16,
+    "dtype": "float16",
+    "quantization": "bitsandbytes NF4 double quantization",
+    "attention": "eager"
+  },
+  "required_metrics": {
+    "mcq_accuracy_all": {
+      "description": "Micro accuracy across all released MCQ samples",
+      "direction": "higher_is_better"
+    },
+    "mcq_accuracy_by_task": {
+      "description": "Accuracy for SOD, FDD, SU, TP, CR, LTG, and MSI",
+      "direction": "higher_is_better"
+    },
+    "invalid_parse_rate": {
+      "description": "Fraction without a valid standalone A-E response",
+      "direction": "lower_is_better"
+    }
+  },
+  "source": {
+    "paper": "arXiv:2512.00818",
+    "repo": "https://github.com/LsmnBmnc/Med-CMR",
+    "repo_commit": "808a035ba7ce6831d8c076b8ce1edd68b3604ff8"
+  },
+  "known_deviations": [
+    "Qwen3.5-4B was not reported in the Med-CMR paper.",
+    "Transformers eager inference replaces the paper's vLLM deployment because current vLLM is not a trusted V100 route.",
+    "The paper does not report sampling or image-token limits; this contract uses deterministic decoding and pinned processor defaults."
+  ],
+  "status": "candidate_not_yet_verified"
+}

@@ -5,7 +5,7 @@
 - baseline id：`qwen35-4b-medcmr-b0`
 - route：`reproduce`
 - owner stage：`baseline`
-- current phase：`analysis`
+- current phase：`setup`
 
 ## Core
 
@@ -35,13 +35,13 @@
 
 - [x] remote working directory confirmed
 - [x] V100 environment and Qwen3.5-4B model smoke verified
-- [ ] dataset path and free-space budget confirmed
+- [x] dataset path and free-space budget confirmed
 - [ ] exact run command/config frozen
 - [ ] durable log and checkpoint/resume paths verified
 
 ## Closeout
 
 - [ ] concise trusted baseline summary written
-- [ ] canonical `baselines/local/qwen35-4b-medcmr-b0/json/metric_contract.json` written
+- [x] canonical `baselines/local/qwen35-4b-medcmr-b0/json/metric_contract.json` written
 - [ ] baseline artifact/report written
 - [ ] next stage named explicitly

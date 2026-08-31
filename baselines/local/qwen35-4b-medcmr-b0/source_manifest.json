@@ -1,0 +1,31 @@
+{
+  "schema_version": "edgemed-baseline-source/v1",
+  "baseline_id": "qwen35-4b-medcmr-b0",
+  "route": "reproduce",
+  "model": {
+    "repo_id": "Qwen/Qwen3.5-4B",
+    "local_path": "/home/ubuntu/models/Qwen3.5-4B"
+  },
+  "benchmark_repo": {
+    "url": "https://github.com/LsmnBmnc/Med-CMR",
+    "commit": "808a035ba7ce6831d8c076b8ce1edd68b3604ff8"
+  },
+  "dataset": {
+    "repo_id": "aaassddaadf/Med-CMR",
+    "revision": "a9b2d6e610c6c5dcf4f3e5aa89c7ec9fd7a05b73",
+    "archive_bytes": 6895143178,
+    "archive_sha256": "8495f3b6b2901a095918ab27c600e42da7287a87f6aea490912ba60d27de3775",
+    "license_declared": "apache-2.0"
+  },
+  "paper_contract": {
+    "mcq_count": 16655,
+    "open_count": 3998,
+    "open_judge": "DeepSeek-V3.2-Exp"
+  },
+  "release_observation": {
+    "mcq_count": 16655,
+    "open_count": 3999,
+    "split_field": false,
+    "official_evaluator_code": false
+  }
+}
