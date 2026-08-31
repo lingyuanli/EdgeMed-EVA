@@ -34,7 +34,7 @@
 - local working directory：本仓库。
 - remote working directory：`/home/ubuntu/EdgeMed-EVA`。
 - environment：项目 `.venv`；PyTorch 2.10.0+cu126；固定 Transformers commit；FP16 compute + NF4；eager attention。
-- model：`/home/ubuntu/models/Qwen3.5-4B`，已通过真实多模态 smoke。
+- model：`/home/ubuntu/models/Qwen3.5-4B`，HF revision `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a`，已通过真实多模态 smoke；正式 run contract 绑定 source manifest 哈希。
 - required download：官方 `dataset.zip`；固定 revision，顺序下载并校验 LFS SHA-256。当前经本地 `127.0.0.1:7890` 到远端回环 `127.0.0.1:17890` 的 SSH 反向隧道断点续传，仅该下载显式使用代理。
 - hardware assumption：1× Tesla V100-SXM2-32GB，10 CPU cores，62GB RAM；2026-08-31 下载中复核 `/home/ubuntu` 可用 101,857,734,656 bytes，覆盖约 6.9GB archive、约 6.9GB 解包和运行产物。
 - smoke test：需要。先解包结构 QA，再运行每类至少 2 个样本且总量不超过 20 的无答案可见 smoke。
@@ -74,3 +74,4 @@
 | 2026-08-31 | released open count 记为 3,999；open judge 降级 | 数据包比论文多一条，DeepSeek-V3.2-Exp 当前不可用 | MCQ 继续正式复现；open 先生成、后分层评分 |
 | 2026-08-31 | 实现 source-pinned 数据准备、无答案推理面、Qwen runner、MCQ scorer 与 exact-resume 校验 | 让正式运行可复算且不向 runner 暴露参考答案 | 等待远端 pytest、数据 SHA 和 bounded smoke 后冻结主命令 |
 | 2026-08-31 | Hugging Face 下载改为 SSH 反向代理断点续传 | 远端直连/HF API 不稳定，用户提供本地代理 | 仅改变传输路径，不改变 revision、字节或内容哈希 |
+| 2026-08-31 | Qwen3.5-4B 固定到 HF revision `851bf6e8…`，两片权重 SHA-256 与 HF 下载收据一致 | 排除本地目录漂移或损坏 | run contract 新增 model source manifest 哈希 |

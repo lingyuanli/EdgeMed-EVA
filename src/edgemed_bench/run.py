@@ -83,6 +83,7 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--data-root", type=Path, required=True)
     parser.add_argument("--model-path", type=Path, required=True)
+    parser.add_argument("--model-source-manifest", type=Path, required=True)
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--sample-id-file", type=Path)
@@ -127,6 +128,7 @@ def main() -> None:
         "kind": args.kind,
         "manifest_sha256": sha256_file(args.manifest),
         "model_path": str(args.model_path.resolve()),
+        "model_source_manifest_sha256": sha256_file(args.model_source_manifest),
         "prompt_sha256": prompt_hash(args.kind),
         "max_new_tokens": max_new_tokens,
         "do_sample": False,

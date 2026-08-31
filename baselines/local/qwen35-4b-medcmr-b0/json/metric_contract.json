@@ -12,7 +12,7 @@
   },
   "preprocessing": {
     "prompt": "Med-CMR supplement MCQ response generation prompt",
-    "image_processor": "Qwen/Qwen3.5-4B pinned local processor defaults",
+    "image_processor": "Qwen/Qwen3.5-4B revision 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a processor defaults",
     "reference_fields_visible_to_runner": false
   },
   "generation": {
