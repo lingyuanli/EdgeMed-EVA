@@ -1,0 +1,15 @@
+# Direct dependencies verified on Tesla V100-SXM2-32GB on 2026-08-31.
+# PyTorch and torchvision are installed separately from the official cu126 index.
+transformers @ git+https://github.com/huggingface/transformers.git@42ca97014c85d71a88ad60d55f08cb9fb4d26e2c
+accelerate==1.14.0
+peft==0.20.0
+bitsandbytes==0.50.2
+trl==1.12.0
+qwen-vl-utils==0.0.14
+datasets==5.0.1
+huggingface-hub==1.29.0
+pillow==12.3.0
+safetensors==0.8.0
+sentencepiece==0.2.2
+pytest==9.1.1
+
