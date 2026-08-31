@@ -31,6 +31,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo-id", default="Qwen/Qwen3.5-4B")
     parser.add_argument("--local-dir", type=Path, required=True)
+    parser.add_argument("--revision", default="main")
     parser.add_argument("--env-file", type=Path)
     parser.add_argument("--max-workers", type=int, default=1)
     args = parser.parse_args()
@@ -42,6 +43,7 @@ def main() -> None:
     path = snapshot_download(
         repo_id=args.repo_id,
         local_dir=args.local_dir,
+        revision=args.revision,
         max_workers=args.max_workers,
         token=os.environ.get("HF_TOKEN"),
     )
