@@ -119,7 +119,7 @@ def main() -> None:
     if predictions_path.exists() and not args.resume:
         raise FileExistsError(f"Predictions already exist; use --resume: {predictions_path}")
 
-    max_new_tokens = args.max_new_tokens or (16 if args.kind == "mcq" else 512)
+    max_new_tokens = args.max_new_tokens or (64 if args.kind == "mcq" else 512)
     selected_ids = [row["sample_id"] for row in rows]
     selected_ids_sha256 = __import__("hashlib").sha256(
         "\n".join(selected_ids).encode()

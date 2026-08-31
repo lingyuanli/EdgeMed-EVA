@@ -21,6 +21,7 @@ def test_open_prompt_contract() -> None:
 def test_mcq_parser_is_conservative() -> None:
     assert parse_mcq("A") == ("A", "exact_letter")
     assert parse_mcq("Answer: (c)") == ("C", "answer_marker")
+    assert parse_mcq("C) C) Leading option with explanation") == ("C", "leading_option")
     assert parse_mcq("Reasoning here\nD.") == ("D", "standalone_line")
     assert parse_mcq("A differential includes B and C") == (None, "invalid")
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 
 ANSWER_MARKER = re.compile(r"(?im)^\s*answer\s*[:\-]\s*[\(\[]?([A-E])[\)\]]?\s*[\.!]?\s*$")
+LEADING_OPTION = re.compile(r"(?i)^\s*[\(\[]?([A-E])[\)\].:\-]\s*")
 LETTER_LINE = re.compile(r"(?im)^\s*[\(\[]?([A-E])[\)\]]?\s*[\.!]?\s*$")
 OPEN_REASONING = re.compile(r"(?is)\breasoning\s*:\s*(.*?)(?=\n\s*answer\s*:)")
 OPEN_ANSWER = re.compile(r"(?is)\banswer\s*:\s*(.+?)\s*$")
@@ -17,6 +18,9 @@ def parse_mcq(text: str) -> tuple[str | None, str]:
     marker = ANSWER_MARKER.search(stripped)
     if marker:
         return marker.group(1).upper(), "answer_marker"
+    leading = LEADING_OPTION.search(stripped)
+    if leading:
+        return leading.group(1).upper(), "leading_option"
     line = LETTER_LINE.search(stripped)
     if line:
         return line.group(1).upper(), "standalone_line"
