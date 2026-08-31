@@ -28,4 +28,3 @@ export UV_LINK_MODE=copy
   --requirement environment/requirements-v100.txt
 
 .venv/bin/python scripts/smoke-v100.py --cuda-only
-
