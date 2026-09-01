@@ -144,12 +144,6 @@ def build_pmc_vqa(
             if relative_image_path is None:
                 rejected["unsafe_image_path"] += 1
                 continue
-            image_path = image_root / relative_image_path
-            image_info = _image_record(image_path)
-            if image_info is None:
-                rejected["missing_image"] += 1
-                continue
-            _, image_sha = image_info
             candidates.append(
                 {
                     "source_id": source_id,
@@ -161,7 +155,6 @@ def build_pmc_vqa(
                     "answer_text": choices[answer],
                     "options": choices,
                     "source_caption": (row.get("Caption") or "").strip(),
-                    "image_sha256": image_sha,
                     "rank": _selection_key(seed, source_id),
                 }
             )
@@ -173,6 +166,11 @@ def build_pmc_vqa(
         if per_image[row["figure_path"]] >= max_per_image:
             rejected["per_image_cap"] += 1
             continue
+        image_info = _image_record(image_root / row["figure_path"])
+        if image_info is None:
+            rejected["missing_image"] += 1
+            continue
+        row["image_sha256"] = image_info[1]
         per_image[row["figure_path"]] += 1
         selected.append(row)
         if len(selected) == limit:
