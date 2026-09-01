@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
@@ -10,7 +11,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 from .io import read_jsonl, sha256_file, write_json
 
@@ -52,6 +53,27 @@ def image_dhash(path: Path) -> int:
         for x in range(8):
             value = (value << 1) | int(pixels[offset + x] > pixels[offset + x + 1])
     return value
+
+
+def image_correlation(first: Path, second: Path, size: int = 128) -> float:
+    """Contrast-normalized pixel correlation used to confirm dHash candidates."""
+
+    def pixels(path: Path) -> list[float]:
+        with Image.open(path) as source:
+            image = ImageOps.autocontrast(source.convert("L"))
+            image = ImageOps.fit(image, (size, size), method=Image.Resampling.BILINEAR)
+        return [float(value) for value in image.get_flattened_data()]
+
+    left, right = pixels(first), pixels(second)
+    left_mean = sum(left) / len(left)
+    right_mean = sum(right) / len(right)
+    covariance = sum((x - left_mean) * (y - right_mean) for x, y in zip(left, right))
+    left_variance = sum((x - left_mean) ** 2 for x in left)
+    right_variance = sum((y - right_mean) ** 2 for y in right)
+    denominator = math.sqrt(left_variance * right_variance)
+    if denominator == 0:
+        return float(left == right)
+    return covariance / denominator
 
 
 @dataclass
@@ -137,6 +159,7 @@ def validate_external_data(
     benchmark_data_root: Path,
     text_similarity_threshold: float = 0.92,
     image_hamming_threshold: int = 4,
+    image_correlation_threshold: float = 0.98,
 ) -> dict[str, Any]:
     schema_problems = _validate_schema(rows)
     if schema_problems:
@@ -149,6 +172,7 @@ def validate_external_data(
         }
 
     benchmark_image_hashes = {row["image_sha256"]: row["sample_id"] for row in benchmark_rows}
+    benchmark_by_id = {row["sample_id"]: row for row in benchmark_rows}
     benchmark_texts = [(row["sample_id"], normalized_text(row["question"])) for row in benchmark_rows]
     benchmark_exact_text = {text: sample_id for sample_id, text in benchmark_texts}
 
@@ -175,7 +199,9 @@ def validate_external_data(
         benchmark_dhashes.add(row["sample_id"], benchmark_dhash_cache[path])
 
     overlaps: list[dict[str, Any]] = []
+    near_image_candidates: list[dict[str, Any]] = []
     external_file_cache: dict[Path, tuple[str, int]] = {}
+    correlation_cache: dict[tuple[Path, Path], float] = {}
     checked = 0
     for row in rows:
         if row["quality_status"] != "accepted":
@@ -239,14 +265,23 @@ def validate_external_data(
                     )
 
         for sample_id, distance in benchmark_dhashes.query(dhash, image_hamming_threshold):
-            overlaps.append(
-                {
-                    "record_id": record_id,
-                    "kind": "near_image",
-                    "benchmark_sample_id": sample_id,
-                    "hamming_distance": distance,
-                }
-            )
+            benchmark_row = benchmark_by_id[sample_id]
+            benchmark_path = (benchmark_data_root / benchmark_row["image_path"]).resolve()
+            pair = (path, benchmark_path)
+            if pair not in correlation_cache:
+                correlation_cache[pair] = image_correlation(path, benchmark_path)
+            correlation = correlation_cache[pair]
+            finding = {
+                "record_id": record_id,
+                "kind": "near_image",
+                "benchmark_sample_id": sample_id,
+                "hamming_distance": distance,
+                "pixel_correlation": correlation,
+            }
+            if correlation >= image_correlation_threshold:
+                overlaps.append(finding)
+            else:
+                near_image_candidates.append(finding)
 
     status = "passed" if checked > 0 and not file_problems and not overlaps else "failed"
     return {
@@ -258,10 +293,12 @@ def validate_external_data(
         "schema_problems": [],
         "file_problems": file_problems,
         "overlaps": overlaps,
+        "near_image_candidates_rejected_by_confirmation": near_image_candidates,
         "overlap_checks_run": True,
         "thresholds": {
             "near_text_sequence_ratio": text_similarity_threshold,
             "near_image_dhash_hamming": image_hamming_threshold,
+            "near_image_pixel_correlation": image_correlation_threshold,
         },
         "unique_images_checked": {
             "external": len(external_file_cache),
@@ -279,6 +316,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--text-similarity-threshold", type=float, default=0.92)
     parser.add_argument("--image-hamming-threshold", type=int, default=4)
+    parser.add_argument("--image-correlation-threshold", type=float, default=0.98)
     args = parser.parse_args()
 
     report = validate_external_data(
@@ -288,6 +326,7 @@ def main() -> None:
         args.benchmark_data_root,
         args.text_similarity_threshold,
         args.image_hamming_threshold,
+        args.image_correlation_threshold,
     )
     report["source_hashes"] = {
         "external_manifest_sha256": sha256_file(args.manifest),

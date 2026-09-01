@@ -44,9 +44,15 @@ The validator fails closed on:
 - exact image SHA-256 collision with Med-CMR;
 - normalized exact question collision;
 - near-text collision using a configured SequenceMatcher threshold after distinctive-token candidate retrieval;
-- near-image collision using 64-bit difference hash and a configured Hamming threshold.
+- near-image collision using 64-bit difference hash for candidate retrieval,
+  confirmed by contrast-normalized 128×128 pixel correlation. The frozen cycle-1
+  thresholds are dHash Hamming distance ≤4 and correlation ≥0.98.
 
-Near-duplicate heuristics reduce risk but do not prove semantic independence. Before a dataset is admitted, source/article/patient identifiers and a manual audit of all flagged clusters remain required. Thresholds are frozen before inspecting downstream model scores.
+Near-duplicate heuristics reduce risk but do not prove semantic independence.
+Candidate pairs rejected by the correlation confirmation remain in the report
+for audit. Before admission, source/article/patient identifiers and a manual
+audit of all candidate clusters remain required. Thresholds are frozen before
+inspecting downstream model scores.
 
 ## Command
 

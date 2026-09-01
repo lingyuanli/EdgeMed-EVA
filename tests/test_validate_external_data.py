@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from edgemed_bench.validate_external_data import main, validate_external_data
+from edgemed_bench.validate_external_data import image_dhash, main, validate_external_data
 
 
 def make_image(path: Path, pattern: str) -> str:
@@ -69,6 +69,29 @@ def test_exact_image_overlap_fails(tmp_path: Path) -> None:
     )
     assert report["status"] == "failed"
     assert {item["kind"] for item in report["overlaps"]} >= {"exact_image", "near_image"}
+
+
+def test_dhash_candidate_needs_pixel_confirmation(tmp_path: Path) -> None:
+    first = Image.new("L", (32, 32))
+    second = Image.new("L", (32, 32))
+    for y in range(32):
+        for x in range(32):
+            first.putpixel((x, y), x * 8)
+            second.putpixel((x, y), int(255 * (x / 31) ** 4))
+    first.save(tmp_path / "external.png")
+    second.save(tmp_path / "benchmark.png")
+    assert image_dhash(tmp_path / "external.png") == image_dhash(tmp_path / "benchmark.png")
+    external_sha = hashlib.sha256((tmp_path / "external.png").read_bytes()).hexdigest()
+    benchmark_sha = hashlib.sha256((tmp_path / "benchmark.png").read_bytes()).hexdigest()
+    report = validate_external_data(
+        [external_row(external_sha)],
+        tmp_path,
+        [benchmark_row(benchmark_sha)],
+        tmp_path,
+    )
+    assert report["status"] == "passed"
+    assert report["overlaps"] == []
+    assert len(report["near_image_candidates_rejected_by_confirmation"]) == 1
 
 
 def test_near_text_overlap_fails(tmp_path: Path) -> None:
