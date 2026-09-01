@@ -41,6 +41,7 @@
 - [x] M1a two-step V100 backward/save smoke passed with finite gradients, applied optimizer steps, and hash-bound adapter
 - [x] M1a saved adapter reload gate passed with 4/4 completed predictions and zero invalid parses
 - [x] M1a pilot seed 20260901 improved frozen direct by +4.1016 points with paired bootstrap CI lower bound above zero
+- [x] M1a pilot seeds 20260902/20260903 completed; 3/3 positive and 3/3 paired-CI lower bounds above zero
 
 ## Smoke Queue
 
@@ -58,4 +59,4 @@
 
 ## Next Concrete Action
 
-Run two additional unchanged-budget pilot seeds with `EDGEMED_SEED=20260902` and `EDGEMED_SEED=20260903`. Require at least two of three seeds to improve over frozen direct, inspect the cross-seed mean/range, and keep Med-CMR test closed until that decision is recorded.
+Run the nested seed3 budget study with `EDGEMED_MAX_STEPS=512 EDGEMED_SEED=20260903 scripts/run-pmc-t1a-pilot128.sh`. Compare against both frozen direct and the seed3/128 incumbent. Do not open Med-CMR test unless the final checkpoint selection is frozen.

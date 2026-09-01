@@ -8,8 +8,9 @@ dev_surface="${EDGEMED_PMC_DEV_SURFACES:-/home/ubuntu/data/external/surfaces/pmc
 model_path="${EDGEMED_MODEL_PATH:-/home/ubuntu/models/Qwen3.5-4B}"
 model_receipt="${repo_root}/baselines/local/qwen35-4b-medcmr-b0/source_manifest.json"
 seed="${EDGEMED_SEED:-20260901}"
-train_run="${repo_root}/runs/qwen35-4b-pmc-t1a-qlora-pilot128-s${seed}"
-eval_run="${repo_root}/runs/qwen35-4b-pmc-t1a-pilot128-dev-s${seed}"
+max_steps="${EDGEMED_MAX_STEPS:-128}"
+train_run="${repo_root}/runs/qwen35-4b-pmc-t1a-qlora-pilot${max_steps}-s${seed}"
+eval_run="${repo_root}/runs/qwen35-4b-pmc-t1a-pilot${max_steps}-dev-s${seed}"
 direct_predictions="${repo_root}/runs/qwen35-4b-pmc-vqa-dev-direct-px786432-20260901/predictions.jsonl"
 
 cd "${repo_root}"
@@ -28,7 +29,7 @@ PYTHONPATH=src .venv/bin/python -m edgemed_bench.train_qlora \
   --model-path "${model_path}" \
   --model-source-manifest "${model_receipt}" \
   --run-dir "${train_run}" \
-  --max-steps 128 \
+  --max-steps "${max_steps}" \
   --gradient-accumulation 2 \
   --learning-rate 1e-4 \
   --lora-rank 16 \

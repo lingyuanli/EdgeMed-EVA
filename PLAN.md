@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-01
-当前主阶段：`M1a pilot seed1 passed / seeds2-3 next`
+当前主阶段：`M1a three-seed pilot passed / 512-step budget study next`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -64,7 +64,7 @@
 ## 5. Checklist Link
 
 - checklist path：`CHECKLIST.md`。
-- next item：保持机制/预算不变，运行 M1a pilot seeds 20260902/20260903，检查至少 2/3 同方向与跨 seed 稳定性。
+- next item：固定最佳 seed 20260903，仅将训练预算从 128 增至 512 steps，完成同一 512-row paired dev gate。
 
 ## 6. Revision Log
 
@@ -86,6 +86,7 @@
 | 2026-09-01 | PMC-VQA 512 条冻结开发集完成 direct-vs-B1 成对比较 | B1 512/512 严格 JSON，但准确率 39.8438%，相对 direct 57.6172% 回退 17.7734 点；bootstrap 95% CI `[-22.8516,-12.5000]`，McNemar `p=1.05e-10` | 归档零样本 B1 答案优化线；不消费新的 Med-CMR test 评测，转入独立的 direct-answer QLoRA smoke |
 | 2026-09-01 | 单张 V100 完成 T1a QLoRA 两步 backward/save smoke | 默认/128 loss scale 产生非有限梯度；scale=1 且硬跳步门下两步 finite/applied，峰值 6,775 MiB，adapter 哈希可复现 | 证明 32GB V100 可承载 answer-only QLoRA；只晋级 adapter reload/pilot，不宣称训练收益 |
 | 2026-09-01 | M1a 128-step pilot seed 20260901 完成成对开发评测 | 61.7188% vs direct 57.6172%；delta +4.1016，bootstrap CI `[0.3906,8.0078]`，McNemar `p=0.0439` | 单 seed 通过但显著性临界；不触碰 Med-CMR test，追加两个冻结 seed |
+| 2026-09-01 | M1a 128-step pilot 三 seed 全部完成 | 三 seed 61.7188/63.8672/66.0156%，相对 direct 均为正且各自 paired CI 下界 >0；平均提升 +6.25 点 | M1a 通过跨 seed pilot 门；继续单变量训练预算研究，Med-CMR test 仍关闭 |
 
 ## 7. External Development Gate Contract
 
@@ -101,5 +102,5 @@
 - admitted primary development: 512 PMC-VQA v2 MCQs, article/image/question-disjoint from the train seed and zero confirmed Med-CMR overlap.
 - completed comparison: direct 295/512 (57.6172%); B1 204/512 (39.8438%); paired delta -17.7734 points with 95% bootstrap interval `[-22.8516,-12.5000]`.
 - adapter reload gate: 4/4 completed, zero invalid parse; 3/4 accuracy is operational-only and not an efficacy claim.
-- seed1 result: 316/512 (61.7188%), +4.1016 points over frozen direct; paired CI lower bound +0.3906.
-- next execution: run the same `scripts/run-pmc-t1a-pilot128.sh` with `EDGEMED_SEED=20260902` and `20260903` sequentially.
+- three-seed result: mean 63.8672%, mean +6.25 points; 3/3 positive and 3/3 paired-CI lower bounds above zero.
+- next execution: `EDGEMED_MAX_STEPS=512 EDGEMED_SEED=20260903 scripts/run-pmc-t1a-pilot128.sh`; retain seed3/128 as incumbent until paired result proves otherwise.

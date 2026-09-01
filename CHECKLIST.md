@@ -59,5 +59,6 @@
 - [x] single-V100 two-step T1a QLoRA backward/save smoke passed with finite/applied gradients and adapter hash
 - [x] saved T1a adapter reload/inference smoke passed (4/4 complete, zero invalid)
 - [x] 128-step T1a seed 20260901 completed: +4.1016 points, paired CI lower bound >0
-- [ ] T1a seeds 20260902/20260903 completed under the same frozen pilot contract family
+- [x] T1a seeds 20260902/20260903 completed; 3/3 directions and CI lower bounds positive
+- [ ] seed 20260903 512-step nested budget study completed and compared with 128-step incumbent
 - [ ] golden validation annotation protocol frozen before model scoring
