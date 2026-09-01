@@ -6,6 +6,7 @@ import argparse
 import csv
 import hashlib
 import json
+import os
 import re
 import shutil
 import stat
@@ -14,7 +15,7 @@ from collections import Counter
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
 
-from .io import append_jsonl, sha256_file, write_json
+from .io import append_jsonl, read_jsonl, reject_reference_fields, sha256_file, write_json
 
 PMC_REVISION = "b56ae594f794867893143b337b4118a835794647"
 SLAKE_REVISION = "a9083ce6c34ac3ffb17671a605962924d8a8f9e9"
@@ -42,11 +43,12 @@ def _clean_choice(value: str) -> str:
     return CHOICE_PREFIX_RE.sub("", value.strip(), count=1).strip()
 
 
-def _write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> None:
+def _write_jsonl(path: Path, rows: Iterable[dict[str, Any]], mode: int = 0o644) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         for row in rows:
             append_jsonl(handle, row)
+    os.chmod(path, mode)
 
 
 def _image_record(path: Path) -> tuple[str, str] | None:
@@ -302,6 +304,62 @@ def build_slake(
     return report
 
 
+def split_surfaces(
+    manifest_path: Path,
+    kind: str,
+    inference_output: Path,
+    references_output: Path,
+    report_path: Path,
+) -> dict[str, Any]:
+    rows = [row for row in read_jsonl(manifest_path) if row["quality_status"] == "accepted"]
+    inference_rows: list[dict[str, Any]] = []
+    reference_rows: list[dict[str, Any]] = []
+    for row in rows:
+        sample_id = row["record_id"]
+        inference = {
+            "sample_id": sample_id,
+            "kind": kind,
+            "question": row["question"],
+            "image_path": row["image_path"],
+            "image_sha256": row["image_sha256"],
+            "task": row.get("cohort", row["source_dataset"]),
+            "source_dataset": row["source_dataset"],
+            "source_version": row["source_version"],
+            "source_record_id": row.get("source_record_id"),
+        }
+        if kind == "mcq":
+            options = row.get("options")
+            if not isinstance(options, dict) or set(options) != set("ABCD"):
+                raise ValueError(f"MCQ record has invalid options: {sample_id}")
+            if row["answer"] not in options:
+                raise ValueError(f"MCQ record has invalid answer: {sample_id}")
+            inference["options"] = options
+        inference_rows.append(inference)
+        reference_rows.append({"sample_id": sample_id, "answer": row["answer"]})
+
+    if not inference_rows:
+        raise ValueError("No accepted records to split")
+    reject_reference_fields(inference_rows)
+    _write_jsonl(inference_output, inference_rows)
+    _write_jsonl(references_output, reference_rows, mode=0o600)
+    report = {
+        "schema_version": "edgemed-external-surfaces/v1",
+        "kind": kind,
+        "count": len(inference_rows),
+        "source_hashes": {
+            "admitted_manifest_sha256": sha256_file(manifest_path),
+            "inference_manifest_sha256": sha256_file(inference_output),
+            "references_sha256": sha256_file(references_output),
+        },
+        "leakage_boundary": {
+            "inference_has_reference_fields": False,
+            "references_mode": "0600",
+        },
+    }
+    write_json(report_path, report)
+    return report
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="source", required=True)
@@ -326,6 +384,12 @@ def main() -> None:
     extract.add_argument("--output-root", type=Path, required=True)
     extract.add_argument("--expected-sha256", required=True)
     extract.add_argument("--report", type=Path, required=True)
+    surfaces = subparsers.add_parser("split-surfaces")
+    surfaces.add_argument("--manifest", type=Path, required=True)
+    surfaces.add_argument("--kind", choices=("mcq", "open"), required=True)
+    surfaces.add_argument("--inference-output", type=Path, required=True)
+    surfaces.add_argument("--references-output", type=Path, required=True)
+    surfaces.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
 
     if args.source == "pmc-vqa":
@@ -343,9 +407,17 @@ def main() -> None:
         )
     elif args.source == "slake":
         report = build_slake(args.json, args.image_root, args.output, args.report)
-    else:
+    elif args.source == "extract-zip":
         report = extract_zip_safe(args.archive, args.output_root, args.expected_sha256)
         write_json(args.report, report)
+    else:
+        report = split_surfaces(
+            args.manifest,
+            args.kind,
+            args.inference_output,
+            args.references_output,
+            args.report,
+        )
     print(json.dumps(report, sort_keys=True))
 
 

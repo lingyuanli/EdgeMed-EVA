@@ -115,6 +115,14 @@ def main() -> None:
     rows = select_rows(rows, args.limit, args.sample_id_file)
     if not rows:
         raise ValueError("No rows selected")
+    option_letters = "ABCDE"
+    if args.kind == "mcq":
+        option_schemas = {"".join(sorted(row["options"])) for row in rows}
+        if len(option_schemas) != 1:
+            raise ValueError(f"Mixed MCQ option schemas: {sorted(option_schemas)}")
+        option_letters = next(iter(option_schemas))
+        if option_letters not in {"ABCD", "ABCDE"}:
+            raise ValueError(f"Unsupported MCQ option schema: {option_letters}")
 
     run_dir = args.run_dir.resolve()
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -134,7 +142,7 @@ def main() -> None:
         "manifest_sha256": sha256_file(args.manifest),
         "model_path": str(args.model_path.resolve()),
         "model_source_manifest_sha256": sha256_file(args.model_source_manifest),
-        "prompt_sha256": prompt_hash(args.kind, args.prompt_variant),
+        "prompt_sha256": prompt_hash(args.kind, args.prompt_variant, option_letters),
         "max_new_tokens": max_new_tokens,
         "do_sample": False,
         "thinking_mode": False,
@@ -148,6 +156,8 @@ def main() -> None:
     # add a new field, so an exact B0 resume remains possible.
     if args.prompt_variant != "direct":
         contract["prompt_variant"] = args.prompt_variant
+    if option_letters != "ABCDE":
+        contract["option_letters"] = option_letters
     contract_sha = __import__("hashlib").sha256(
         json.dumps(contract, sort_keys=True).encode()
     ).hexdigest()

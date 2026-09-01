@@ -7,7 +7,12 @@ from pathlib import Path
 from PIL import Image
 
 from edgemed_bench.io import read_jsonl
-from edgemed_bench.prepare_external import build_pmc_vqa, build_slake, extract_zip_safe
+from edgemed_bench.prepare_external import (
+    build_pmc_vqa,
+    build_slake,
+    extract_zip_safe,
+    split_surfaces,
+)
 
 
 def make_image(path: Path, color: str) -> str:
@@ -90,3 +95,33 @@ def test_extract_zip_safe_checks_hash_and_traversal(tmp_path: Path) -> None:
         assert "Unsafe archive member" in str(error)
     else:
         raise AssertionError("path traversal archive was accepted")
+
+
+def test_split_surfaces_keeps_answers_out_of_inference(tmp_path: Path) -> None:
+    manifest = tmp_path / "admitted.jsonl"
+    row = {
+        "record_id": "external-1",
+        "source_dataset": "fixture",
+        "source_version": "v1",
+        "source_record_id": "1",
+        "quality_status": "accepted",
+        "question": "Question?",
+        "options": {"A": "one", "B": "two", "C": "three", "D": "four"},
+        "answer": "B",
+        "answer_text": "two",
+        "source_caption": "answer-bearing context",
+        "image_path": "image.png",
+        "image_sha256": "abc",
+    }
+    manifest.write_text(json.dumps(row) + "\n")
+    inference = tmp_path / "inference.jsonl"
+    references = tmp_path / "references.jsonl"
+    report_path = tmp_path / "surfaces.json"
+    report = split_surfaces(manifest, "mcq", inference, references, report_path)
+    inference_row = read_jsonl(inference)[0]
+    assert "answer" not in inference_row
+    assert "source_caption" not in inference_row
+    assert set(inference_row["options"]) == set("ABCD")
+    assert read_jsonl(references) == [{"answer": "B", "sample_id": "external-1"}]
+    assert oct(references.stat().st_mode & 0o777) == "0o600"
+    assert report["leakage_boundary"]["inference_has_reference_fields"] is False

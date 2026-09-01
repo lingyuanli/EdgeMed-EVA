@@ -27,6 +27,13 @@ def test_direct_prompt_hash_remains_frozen() -> None:
     assert prompt_hash("mcq") == "d8245cf6e33e209b9819935c40bea5a9a47efcd5c8469842e87afb2d18a9160a"
 
 
+def test_four_choice_prompt_has_separate_contract_hash() -> None:
+    prompt = mcq_prompt("Question?", {letter: f"Option {letter}" for letter in "ABCD"})
+    assert "D) Option D" in prompt
+    assert "E)" not in prompt
+    assert prompt_hash("mcq", option_letters="ABCD") != prompt_hash("mcq")
+
+
 def test_structured_mcq_prompt_is_answer_blind() -> None:
     prompt = mcq_prompt(
         "Question?",

@@ -13,21 +13,24 @@ def mcq_prompt(
     options: dict[str, str],
     variant: str = "direct",
 ) -> str:
-    option_lines = "\n".join(f"{letter}) {options[letter]}" for letter in "ABCDE")
+    option_letters = "".join(sorted(options))
+    if option_letters not in {"ABCD", "ABCDE"}:
+        raise ValueError(f"MCQ options must be A-D or A-E, got: {option_letters}")
+    option_lines = "\n".join(f"{letter}) {options[letter]}" for letter in option_letters)
     stem = (
         "Please carefully observe this medical image and answer the following question:\n\n"
         f"Question: {question}\n\n"
         f"Options:\n{option_lines}\n\n"
     )
     if variant == "direct":
-        return stem + "Answer only with the option letter (A–E)."
+        return stem + f"Answer only with the option letter (A–{option_letters[-1]})."
     if variant == "structured_evidence":
         return stem + (
             "Return exactly one compact JSON object with no markdown or extra text:\n"
             '{"observation":"one concise image-grounded finding",'
             '"hypotheses":["A","B"],"answer":"A"}\n'
             "The observation must state only a visible finding relevant to the question. "
-            "Hypotheses must contain 1–3 distinct option letters (A–E), including the final "
+            f"Hypotheses must contain 1–3 distinct option letters (A–{option_letters[-1]}), including the final "
             "answer. Do not provide hidden chain-of-thought; provide only this short evidence summary."
         )
     if variant == "evidence_answer_v2":
@@ -35,7 +38,7 @@ def mcq_prompt(
             "Return exactly one compact JSON object with no markdown or extra text:\n"
             '{"observation":"visible finding in 20 words or fewer","answer":"A"}\n'
             "Use exactly these two keys. The observation must be one concise, image-grounded "
-            "visible finding of no more than 20 words. The answer must be one option letter A–E. "
+            f"visible finding of no more than 20 words. The answer must be one option letter A–{option_letters[-1]}. "
             "Do not add explanations, hypotheses, reasoning, citations, or additional keys."
         )
     raise ValueError(f"Unknown MCQ prompt variant: {variant}")
@@ -54,11 +57,11 @@ def open_prompt(question: str) -> str:
     )
 
 
-def prompt_hash(kind: str, variant: str = "direct") -> str:
+def prompt_hash(kind: str, variant: str = "direct", option_letters: str = "ABCDE") -> str:
     if kind == "mcq":
         text = mcq_prompt(
             "{question}",
-            {letter: f"{{option_{letter}}}" for letter in "ABCDE"},
+            {letter: f"{{option_{letter}}}" for letter in option_letters},
             variant=variant,
         )
     elif kind == "open":
