@@ -38,6 +38,7 @@
 - [x] PMC-VQA train/dev admitted: 1,968 train, 32 quarantined, 512 disjoint MCQ dev, zero confirmed Med-CMR overlap
 - [x] B1-v2 external development comparison completed and hash-bound
 - [x] B1-v2 archived after -17.7734 point paired answer regression despite 512/512 strict JSON
+- [x] M1a two-step V100 backward/save smoke passed with finite gradients, applied optimizer steps, and hash-bound adapter
 
 ## Smoke Queue
 
@@ -55,4 +56,4 @@
 
 ## Next Concrete Action
 
-Run the frozen two-step `m1a-answer-qlora` backward/save smoke on the single V100. Promotion requires finite loss/gradients, a complete adapter hash receipt, and measured peak memory; it does not inherit the failed B1 schema.
+Reload the saved `m1a-answer-qlora` adapter for a bounded inference smoke. If loading and deterministic generation pass, freeze a small pilot and require paired PMC-VQA development improvement before any Med-CMR test evaluation.

@@ -56,5 +56,6 @@
 - [x] real external manifests generated: SLAKE 1,053; PMC dev 512; PMC train 1,968 accepted + 32 quarantined; all final gates `passed`
 - [x] direct-vs-B1 external development comparison completed with 512/512 paired predictions
 - [x] B1 answer line archived after significant -17.7734 point development regression
-- [ ] single-V100 two-step T1a QLoRA backward/save smoke passed
+- [x] single-V100 two-step T1a QLoRA backward/save smoke passed with finite/applied gradients and adapter hash
+- [ ] saved T1a adapter reload/inference smoke passed
 - [ ] golden validation annotation protocol frozen before model scoring

@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-01
-当前主阶段：`B1 dev regression archived / M1a backward smoke next`
+当前主阶段：`M1a backward smoke passed / adapter reload next`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -64,7 +64,7 @@
 ## 5. Checklist Link
 
 - checklist path：`CHECKLIST.md`。
-- next item：在单张 V100 上运行冻结的两步 `m1a-answer-qlora` backward/save smoke；B1-v2 已因外部 development 显著回退归档。
+- next item：重载已保存的 M1a adapter 做 bounded inference smoke，然后冻结小规模 pilot 配置；B1-v2 已因外部 development 显著回退归档。
 
 ## 6. Revision Log
 
@@ -84,6 +84,7 @@
 | 2026-09-01 | B1 v1/v2 在同一 14 样本 answer-blind smoke 上完成一次预注册格式修复 | v1 仅 8/14 严格 schema；v2 简化为短 observation + answer 后 14/14 严格 JSON，且未访问 references | B1-v2 仅获 operational promotion；准确率评测继续由外部 development 数据 gate 阻塞 |
 | 2026-09-01 | SLAKE English validation 真实 manifest 通过两阶段 overlap gate | 一阶段 dHash 对相似胸片产生 278 条候选；24 个唯一图像对经 correlation≥0.98 确认门和逐对审计均为非重复 | 1,053 条跨数据集记录获准使用；B1 MCQ 选择仍等待 PMC-VQA disjoint dev |
 | 2026-09-01 | PMC-VQA 512 条冻结开发集完成 direct-vs-B1 成对比较 | B1 512/512 严格 JSON，但准确率 39.8438%，相对 direct 57.6172% 回退 17.7734 点；bootstrap 95% CI `[-22.8516,-12.5000]`，McNemar `p=1.05e-10` | 归档零样本 B1 答案优化线；不消费新的 Med-CMR test 评测，转入独立的 direct-answer QLoRA smoke |
+| 2026-09-01 | 单张 V100 完成 T1a QLoRA 两步 backward/save smoke | 默认/128 loss scale 产生非有限梯度；scale=1 且硬跳步门下两步 finite/applied，峰值 6,775 MiB，adapter 哈希可复现 | 证明 32GB V100 可承载 answer-only QLoRA；只晋级 adapter reload/pilot，不宣称训练收益 |
 
 ## 7. External Development Gate Contract
 
@@ -98,4 +99,4 @@
 - admitted training seed: 1,968 PMC-VQA v2 rows; 32 unresolved dHash candidates remain visible but quarantined.
 - admitted primary development: 512 PMC-VQA v2 MCQs, article/image/question-disjoint from the train seed and zero confirmed Med-CMR overlap.
 - completed comparison: direct 295/512 (57.6172%); B1 204/512 (39.8438%); paired delta -17.7734 points with 95% bootstrap interval `[-22.8516,-12.5000]`.
-- next execution: run the frozen 2-step T1a direct-answer QLoRA backward/save smoke on the single V100; B1 is not its parent objective.
+- next execution: reload the hash-bound T1a adapter for bounded inference, then freeze a small pilot; B1 is not its parent objective.

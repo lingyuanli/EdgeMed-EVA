@@ -9,10 +9,11 @@
 - **若做在线 GRPO：最低 4×4090，推荐 8×4090**，先以 4 卡小规模 rollout 验证收益再扩容；
 - **V100 不作为首选**：它没有原生 BF16，Qwen3.5 当前 BF16 权重/新算子需走 FP16 兼容路线并实测。V100 32GB 可做 1–2 卡 QLoRA；V100 16GB 通常需 2–4 卡才能获得可用余量，在线 RL 预计需 8–16 卡且性价比差。
 
-当前实测已证明单张 V100-SXM2-32GB 可加载 NF4 Qwen3.5-4B，并构造
-32,464,896 个 language-only LoRA 参数；视觉可训练参数为 0，构造阶段峰值
-约 5,583 MiB。该证据尚不包含 backward/optimizer 峰值，因此正式训练容量
-仍由已排队的真实 backward smoke 冻结。
+当前实测已证明单张 V100-SXM2-32GB 可加载 NF4 Qwen3.5-4B，并以 FP16
+完成 2 个真实 optimizer steps：32,464,896 个 language-only LoRA 参数，视觉塔
+和 projector 冻结，梯度有限且两步均未被 GradScaler 跳过，峰值 6,775 MiB，
+adapter 可序列化。因此 **1 张 32GB V100 足以启动本项目的 answer-only QLoRA**。
+该证据仍只是 4 样本/2 步 smoke，不等于完整 epoch 的吞吐、稳定性或模型收益。
 
 ## 2. 按阶段配置
 
@@ -27,6 +28,10 @@
 | 三 seed/消融并行 | 3 | 4–8 | 4–8 | 8+ | 单卡单 run 最容易归因 |
 
 V100 数量区间假设使用 4-bit/FP16 和 gradient checkpointing；如果目标环境无法稳定运行 Qwen3.5 视觉栈，卡数增加也不能解决兼容问题，应停止并改用 4090/A100/H100。
+
+本机 V100 的 FP16 路径必须使用冻结的 GradScaler initial scale 1.0，并将
+非有限梯度或 scale 下降视为硬失败。实测 initial scale 128 和框架默认值
+65,536 均导致非有限梯度；这不是显存不足。
 
 ## 3. 24GB 单卡训练预算
 
