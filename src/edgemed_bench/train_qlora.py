@@ -17,6 +17,7 @@ from PIL import Image
 
 from .io import append_jsonl, read_jsonl, reject_reference_fields, sha256_file, write_json
 from .prompts import mcq_prompt, prompt_hash
+from .run import resize_to_pixel_budget
 
 LANGUAGE_LORA_PATTERN = (
     r".*model\.language_model\.layers\.\d+\."
@@ -93,6 +94,7 @@ def main() -> None:
     parser.add_argument("--lora-rank", type=int, default=16)
     parser.add_argument("--lora-alpha", type=int, default=32)
     parser.add_argument("--seed", type=int, default=20260901)
+    parser.add_argument("--max-image-pixels", type=int, default=786432)
     args = parser.parse_args()
 
     import accelerate
@@ -105,6 +107,8 @@ def main() -> None:
 
     if args.max_steps <= 0 or args.gradient_accumulation <= 0:
         raise ValueError("max-steps and gradient-accumulation must be positive")
+    if args.max_image_pixels <= 0:
+        raise ValueError("max-image-pixels must be positive")
     if not torch.cuda.is_available() or torch.cuda.get_device_capability(0) != (7, 0):
         raise RuntimeError("This frozen training route requires one V100 SM70 GPU")
 
@@ -149,6 +153,8 @@ def main() -> None:
         "base_quantization": "nf4-double-quant",
         "compute_dtype": "float16",
         "micro_batch": 1,
+        "max_image_pixels": args.max_image_pixels,
+        "image_resize": "aspect-preserving-lanczos",
         "seed": args.seed,
     }
     contract_sha = __import__("hashlib").sha256(
@@ -249,6 +255,7 @@ def main() -> None:
                 raise ValueError(f"Missing or changed image: {row['sample_id']}")
             with Image.open(image_path) as source:
                 image = source.convert("RGB")
+            image = resize_to_pixel_budget(image, args.max_image_pixels)
             batch = encode_example(processor, row, image)
             batch = {key: value.to("cuda") for key, value in batch.items()}
             with torch.autocast("cuda", dtype=torch.float16):
@@ -310,4 +317,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

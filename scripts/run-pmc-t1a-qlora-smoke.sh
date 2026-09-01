@@ -32,4 +32,5 @@ PYTHONPATH=src .venv/bin/python -m edgemed_bench.train_qlora \
   --learning-rate 1e-4 \
   --lora-rank 16 \
   --lora-alpha 32 \
+  --max-image-pixels 786432 \
   --seed 20260901

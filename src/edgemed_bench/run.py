@@ -49,6 +49,16 @@ def select_rows(
     return rows
 
 
+def resize_to_pixel_budget(image: Image.Image, max_pixels: int | None) -> Image.Image:
+    if max_pixels is None or image.width * image.height <= max_pixels:
+        return image
+    scale = (max_pixels / (image.width * image.height)) ** 0.5
+    size = (max(1, int(image.width * scale)), max(1, int(image.height * scale)))
+    resized = image.copy()
+    resized.thumbnail(size, Image.Resampling.LANCZOS)
+    return resized
+
+
 def build_prompt(row: dict[str, Any], kind: str, prompt_variant: str = "direct") -> str:
     if kind == "mcq":
         return mcq_prompt(row["question"], row["options"], variant=prompt_variant)
@@ -93,6 +103,7 @@ def main() -> None:
     parser.add_argument("--sample-id-file", type=Path)
     parser.add_argument("--prompt-variant", choices=MCQ_PROMPT_VARIANTS, default="direct")
     parser.add_argument("--max-new-tokens", type=int)
+    parser.add_argument("--max-image-pixels", type=int)
     parser.add_argument("--sync-every", type=int, default=10)
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
@@ -109,6 +120,8 @@ def main() -> None:
             artifact_path = (args.adapter_source_manifest.parent / relative_path).resolve()
             if not artifact_path.is_file() or sha256_file(artifact_path) != expected_sha256:
                 raise ValueError(f"Adapter artifact missing or changed: {relative_path}")
+    if args.max_image_pixels is not None and args.max_image_pixels <= 0:
+        raise ValueError("max-image-pixels must be positive")
 
     import accelerate
     import bitsandbytes
@@ -173,6 +186,9 @@ def main() -> None:
         contract["prompt_variant"] = args.prompt_variant
     if option_letters != "ABCDE":
         contract["option_letters"] = option_letters
+    if args.max_image_pixels is not None:
+        contract["max_image_pixels"] = args.max_image_pixels
+        contract["image_resize"] = "aspect-preserving-lanczos"
     if args.adapter_path is not None:
         contract["adapter_path"] = str(args.adapter_path.resolve())
         contract["adapter_source_manifest_sha256"] = sha256_file(args.adapter_source_manifest)
@@ -265,6 +281,7 @@ def main() -> None:
 
             with Image.open(image_path) as source:
                 image = source.convert("RGB")
+            image = resize_to_pixel_budget(image, args.max_image_pixels)
             prompt = build_prompt(row, args.kind, args.prompt_variant)
             messages = [
                 {
@@ -328,6 +345,7 @@ def main() -> None:
                 "output_tokens": output_tokens,
                 "latency_seconds": time.perf_counter() - sample_started,
                 "image_sha256": row["image_sha256"],
+                "processed_image_size": [image.width, image.height],
                 "prompt_sha256": contract["prompt_sha256"],
                 "contract_sha256": contract_sha,
             }

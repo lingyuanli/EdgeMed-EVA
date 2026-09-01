@@ -20,7 +20,7 @@ PYTHONPATH=src .venv/bin/python -m edgemed_bench.prepare_external split-surfaces
   --report "${surface_root}/surface-report.json"
 
 for variant in direct evidence_answer_v2; do
-  run_dir="${repo_root}/runs/qwen35-4b-pmc-vqa-dev-${variant}-20260901"
+  run_dir="${repo_root}/runs/qwen35-4b-pmc-vqa-dev-${variant}-px786432-20260901"
   PYTHONPATH=src .venv/bin/python -m edgemed_bench.run \
     --kind mcq \
     --manifest "${surface_root}/inference.jsonl" \
@@ -30,6 +30,7 @@ for variant in direct evidence_answer_v2; do
     --run-dir "${run_dir}" \
     --prompt-variant "${variant}" \
     --max-new-tokens 64 \
+    --max-image-pixels 786432 \
     --sync-every 10
   PYTHONPATH=src .venv/bin/python -m edgemed_bench.score_mcq \
     --manifest "${surface_root}/inference.jsonl" \
@@ -37,4 +38,3 @@ for variant in direct evidence_answer_v2; do
     --predictions "${run_dir}/predictions.jsonl" \
     --output "${run_dir}/metrics.json"
 done
-
