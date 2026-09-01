@@ -22,6 +22,7 @@ SLAKE_REVISION = "a9083ce6c34ac3ffb17671a605962924d8a8f9e9"
 PMC_ALLOWED_LICENSES = {"CC0", "CC BY", "CC BY-SA"}
 PMC_ID_RE = re.compile(r"^(PMC\d+)", re.IGNORECASE)
 CHOICE_PREFIX_RE = re.compile(r"^[A-D]\s*:\s*", re.IGNORECASE)
+QUESTION_TOKEN_RE = re.compile(r"[a-z0-9]+")
 
 
 def _group_hash(namespace: str, value: str) -> str:
@@ -41,6 +42,10 @@ def _safe_relative_path(value: str) -> Path | None:
 
 def _clean_choice(value: str) -> str:
     return CHOICE_PREFIX_RE.sub("", value.strip(), count=1).strip()
+
+
+def _normalized_question(value: str) -> str:
+    return " ".join(QUESTION_TOKEN_RE.findall(value.casefold()))
 
 
 def _write_jsonl(path: Path, rows: Iterable[dict[str, Any]], mode: int = 0o644) -> None:
@@ -112,10 +117,16 @@ def build_pmc_vqa(
     max_per_image: int = 1,
     required_split: str = "train",
     cohort: str = "train-seed",
+    exclude_manifest: Path | None = None,
 ) -> dict[str, Any]:
     if limit <= 0 or max_per_image <= 0:
         raise ValueError("limit and max_per_image must be positive")
     licenses = load_pmc_licenses(license_path)
+    excluded_questions = (
+        {_normalized_question(row["question"]) for row in read_jsonl(exclude_manifest)}
+        if exclude_manifest is not None
+        else set()
+    )
     candidates: list[dict[str, Any]] = []
     rejected = Counter()
     with csv_path.open(encoding="utf-8-sig", newline="") as handle:
@@ -139,6 +150,9 @@ def build_pmc_vqa(
             question = (row.get("Question") or "").strip()
             if not question:
                 rejected["empty_question"] += 1
+                continue
+            if _normalized_question(question) in excluded_questions:
+                rejected["excluded_question_overlap"] += 1
                 continue
             relative_image_path = _safe_relative_path(figure_path)
             if relative_image_path is None:
@@ -225,6 +239,8 @@ def build_pmc_vqa(
         "unique_images": len(per_image),
         "rejected": dict(sorted(rejected.items())),
     }
+    if exclude_manifest is not None:
+        report["source_hashes"]["exclusion_manifest_sha256"] = sha256_file(exclude_manifest)
     write_json(report_path, report)
     return report
 
@@ -372,6 +388,7 @@ def main() -> None:
     pmc.add_argument("--max-per-image", type=int, default=1)
     pmc.add_argument("--required-split", choices=("train", "test"), default="train")
     pmc.add_argument("--cohort", default="train-seed")
+    pmc.add_argument("--exclude-manifest", type=Path)
     slake = subparsers.add_parser("slake")
     slake.add_argument("--json", type=Path, required=True)
     slake.add_argument("--image-root", type=Path, required=True)
@@ -402,6 +419,7 @@ def main() -> None:
             args.max_per_image,
             args.required_split,
             args.cohort,
+            args.exclude_manifest,
         )
     elif args.source == "slake":
         report = build_slake(args.json, args.image_root, args.output, args.report)

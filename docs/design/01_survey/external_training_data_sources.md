@@ -55,7 +55,9 @@ reproducible run.
 - Use only `test_2.csv`; frozen inspection found zero exact image-name and zero
   PMCID overlap with `train_2.csv`.
 - Select 512 records with seed `edgemed-pmc-vqa-v2-dev-20260901`, at most one
-  question per image. This is the primary B0-versus-B1 prompt-selection surface.
+  question per image, and exclude normalized exact questions present in the
+  frozen 2,000-record train seed. This is the primary B0-versus-B1
+  prompt-selection surface.
 - Call it synthetic MCQ development, not human gold. SLAKE remains the human
   cross-dataset check.
 

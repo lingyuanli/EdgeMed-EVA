@@ -56,6 +56,34 @@ def test_build_pmc_vqa_is_license_filtered_and_deterministic(tmp_path: Path) -> 
     assert report["selection"]["required_split"] == "train"
 
 
+def test_build_pmc_vqa_can_exclude_questions_from_another_manifest(tmp_path: Path) -> None:
+    image_root = tmp_path / "images"
+    make_image(image_root / "PMC1_F1.jpg", "red")
+    csv_path = tmp_path / "test.csv"
+    csv_path.write_text(
+        "index,Figure_path,Caption,Question,Choice A,Choice B,Choice C,Choice D,Answer,split\n"
+        "1,PMC1_F1.jpg,cap,What finding is visible?,one,two,three,four,A,test\n"
+    )
+    license_path = tmp_path / "licenses.csv"
+    license_path.write_text("Accession ID,License\nPMC1,CC BY\n")
+    exclusion = tmp_path / "train.jsonl"
+    exclusion.write_text(json.dumps({"question": "What finding is visible"}) + "\n")
+    report = build_pmc_vqa(
+        csv_path,
+        license_path,
+        image_root,
+        tmp_path / "manifest.jsonl",
+        tmp_path / "report.json",
+        1,
+        "seed",
+        required_split="test",
+        cohort="dev",
+        exclude_manifest=exclusion,
+    )
+    assert report["written"] == 0
+    assert report["rejected"]["excluded_question_overlap"] == 1
+
+
 def test_build_slake_keeps_english_validation_and_image_groups(tmp_path: Path) -> None:
     image_root = tmp_path / "imgs"
     image_sha = make_image(image_root / "xmlab0" / "source.jpg", "green")
