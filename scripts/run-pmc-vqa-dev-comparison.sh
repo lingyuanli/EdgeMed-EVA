@@ -38,3 +38,11 @@ for variant in direct evidence_answer_v2; do
     --predictions "${run_dir}/predictions.jsonl" \
     --output "${run_dir}/metrics.json"
 done
+
+PYTHONPATH=src .venv/bin/python -m edgemed_bench.compare_mcq \
+  --references "${surface_root}/references.jsonl" \
+  --predictions-a "${repo_root}/runs/qwen35-4b-pmc-vqa-dev-direct-px786432-20260901/predictions.jsonl" \
+  --predictions-b "${repo_root}/runs/qwen35-4b-pmc-vqa-dev-evidence_answer_v2-px786432-20260901/predictions.jsonl" \
+  --output "${repo_root}/runs/pmc-vqa-dev-direct-vs-b1-px786432-20260901.json" \
+  --bootstrap-repetitions 10000 \
+  --seed 20260901
