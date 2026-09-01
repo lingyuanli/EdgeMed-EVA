@@ -4,11 +4,11 @@
 
 ## Frontier
 
-- current frontier mode: `exploit`
-- primary optimize submode: `seed`
+- current frontier mode: `explore`
+- primary optimize submode: `train`
 - incumbent: `qwen35-4b-medcmr-b0`, verified MCQ accuracy `27.1690%`
-- promoted line: `B1 structured evidence`, prompt-only diagnostic with unchanged model/data/image preprocessing/decoding
-- active implementation candidate: `b1-evidence-answer-v2`, operationally smoke-verified
+- promoted line: none; zero-shot B1 failed the frozen external-development comparison
+- active implementation candidate: `m1a-answer-qlora`, direct-answer supervised adaptation
 - full-eval queue: empty; Med-CMR test scoring is prohibited until the candidate and evaluation budget are frozen
 
 ## Control Checks
@@ -36,6 +36,8 @@
 - [x] PMC-VQA v2 training seed and SLAKE validation sources frozen by immutable revision
 - [x] SLAKE English validation manifest admitted: 1,053 rows, 96 images, zero confirmed Med-CMR overlap
 - [x] PMC-VQA train/dev admitted: 1,968 train, 32 quarantined, 512 disjoint MCQ dev, zero confirmed Med-CMR overlap
+- [x] B1-v2 external development comparison completed and hash-bound
+- [x] B1-v2 archived after -17.7734 point paired answer regression despite 512/512 strict JSON
 
 ## Smoke Queue
 
@@ -53,4 +55,4 @@
 
 ## Next Concrete Action
 
-Build real PMC-VQA/SLAKE manifests and pass the implemented exact/near-overlap gate before any B1 accuracy comparison or SFT training.
+Run the frozen two-step `m1a-answer-qlora` backward/save smoke on the single V100. Promotion requires finite loss/gradients, a complete adapter hash receipt, and measured peak memory; it does not inherit the failed B1 schema.

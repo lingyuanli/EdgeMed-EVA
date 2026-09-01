@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-01
-当前主阶段：`external data admitted / B0-vs-B1 dev comparison running`
+当前主阶段：`B1 dev regression archived / M1a backward smoke next`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -64,7 +64,7 @@
 ## 5. Checklist Link
 
 - checklist path：`CHECKLIST.md`。
-- next item：实现外部 development 数据 manifest、provenance validator 与 exact/near-overlap gate；B1-v2 已通过 14/14 answer-blind operational smoke，但在数据 gate 前不得做 accuracy 比较。
+- next item：在单张 V100 上运行冻结的两步 `m1a-answer-qlora` backward/save smoke；B1-v2 已因外部 development 显著回退归档。
 
 ## 6. Revision Log
 
@@ -83,6 +83,7 @@
 | 2026-09-01 | 全量 MCQ 完成并经独立实现逐样本复算 | 16,655 个唯一样本完整覆盖，退出码 0，运行/来源/预测哈希一致 | MCQ 以 `verified_diverged` 收口：27.1690%（4,525/16,655）；Open 因 exact judge 不可用正式降级为 `operational_but_incomparable` |
 | 2026-09-01 | B1 v1/v2 在同一 14 样本 answer-blind smoke 上完成一次预注册格式修复 | v1 仅 8/14 严格 schema；v2 简化为短 observation + answer 后 14/14 严格 JSON，且未访问 references | B1-v2 仅获 operational promotion；准确率评测继续由外部 development 数据 gate 阻塞 |
 | 2026-09-01 | SLAKE English validation 真实 manifest 通过两阶段 overlap gate | 一阶段 dHash 对相似胸片产生 278 条候选；24 个唯一图像对经 correlation≥0.98 确认门和逐对审计均为非重复 | 1,053 条跨数据集记录获准使用；B1 MCQ 选择仍等待 PMC-VQA disjoint dev |
+| 2026-09-01 | PMC-VQA 512 条冻结开发集完成 direct-vs-B1 成对比较 | B1 512/512 严格 JSON，但准确率 39.8438%，相对 direct 57.6172% 回退 17.7734 点；bootstrap 95% CI `[-22.8516,-12.5000]`，McNemar `p=1.05e-10` | 归档零样本 B1 答案优化线；不消费新的 Med-CMR test 评测，转入独立的 direct-answer QLoRA smoke |
 
 ## 7. External Development Gate Contract
 
@@ -96,4 +97,5 @@
 - deferred source: MS-CXR/VinDr-CXR evidence boxes require credentialed PhysioNet access and do not block cycle 1.
 - admitted training seed: 1,968 PMC-VQA v2 rows; 32 unresolved dHash candidates remain visible but quarantined.
 - admitted primary development: 512 PMC-VQA v2 MCQs, article/image/question-disjoint from the train seed and zero confirmed Med-CMR overlap.
-- next execution: finish the active direct-vs-B1 development comparison, then run the frozen 2-step T1a QLoRA backward smoke on the single V100.
+- completed comparison: direct 295/512 (57.6172%); B1 204/512 (39.8438%); paired delta -17.7734 points with 95% bootstrap interval `[-22.8516,-12.5000]`.
+- next execution: run the frozen 2-step T1a direct-answer QLoRA backward/save smoke on the single V100; B1 is not its parent objective.

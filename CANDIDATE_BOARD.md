@@ -8,8 +8,8 @@ Candidates are ranked by information gain, feasibility on one V100, test-compara
 
 | Rank | Candidate ID | Level | Parent | Strategy | Mechanism / Layer | Status | Expected Gain | Observed Result | Promote / Archive |
 |---:|---|---|---|---|---|---|---|---|---|
-| 1 | `b1-evidence-answer-v2` | implementation | `b1-structured-json-v1` | debug | prompt + representation / Tier1 | `smoke_passed` | Tests the minimum evidence-attribution surface after v1 proved too complex for reliable zero-shot formatting | 14/14 strict JSON and ≤20-word observations; no accuracy computed | **promote to external-development evaluation after data gate** |
-| 2 | `m1a-answer-qlora` | implementation | `qwen35-4b-medcmr-b0` | explore | supervised objective / Tier2 | `smoke_queued` | Tests whether 1,968 admitted external medical MCQs can improve domain answer alignment on one V100 | data gate passed; assistant-only loss and language-only LoRA construction verified; GPU backward not yet run | run 2-step QLoRA smoke after active dev comparison releases GPU |
+| 1 | `m1a-answer-qlora` | implementation | `qwen35-4b-medcmr-b0` | explore | supervised objective / Tier2 | `smoke_queued` | Tests whether 1,968 admitted external medical MCQs can improve domain answer alignment on one V100 | data gate passed; assistant-only loss and language-only LoRA construction verified; GPU backward not yet run | run frozen 2-step QLoRA backward/save smoke now |
+| 2 | `b1-evidence-answer-v2` | implementation | `b1-structured-json-v1` | debug | prompt + representation / Tier1 | `dev_failed_archived` | Tests the minimum evidence-attribution surface after v1 proved too complex for reliable zero-shot formatting | 512/512 strict JSON, but 39.8438% vs direct 57.6172%; paired delta -17.7734 points, CI entirely below zero | **archive for answer optimization; retain as negative result** |
 | 3 | `m1b-evidence-sft` | brief | `m1a-answer-qlora` | explore | supervised objective / Tier2 | `held_evidence_gate` | Adds evidence behavior only after answer-domain adaptation is attributable | SLAKE admitted, but PMC captions are not eligible human visual-evidence targets | require audited evidence targets; do not train raw captions as observations |
 | 4 | `b2-selective-crop` | brief | `qwen35-4b-medcmr-b0` | explore | tool/system / Tier2 | `held_oracle_gate` | May improve SOD/FDD if native resolution is limiting | n/a | hold until an answer-blind oracle-crop study shows useful upper bound |
 | 5 | `b1-structured-json-v1` | implementation | `qwen35-4b-medcmr-b0` | exploit | prompt + representation / Tier1 | `smoke_failed` | Structured evidence, competing hypotheses, and answer | 14/14 completed but only 8/14 strict schema; 4 cardinality failures and 2 truncations | archive; do not rerun unchanged |
@@ -28,12 +28,13 @@ Candidates are ranked by information gain, feasibility on one V100, test-compara
 - implementation surface: a new versioned prompt/parser variant, focused tests, and one remote smoke receipt; v1 remains reproducible and archived.
 - main risks: verbose output truncation, cosmetic evidence unrelated to the answer, or prompt-induced accuracy regression.
 - disconfirmation: operational parse rate below 13/14 in this single repair smoke, or later clean-development accuracy materially below direct B0.
-- promote now: yes, operational smoke passed; development evaluation remains data-gated.
-- next target: build hash-bound PMC-VQA/SLAKE manifests and pass external-development provenance and overlap QA, then hand the frozen B1 contract to `experiment`.
+- promote now: no. Operational smoke passed, but the completed development comparison showed a statistically clear answer regression.
+- next target: run `m1a-answer-qlora` with the direct answer objective; do not carry the B1 observation schema into training.
 
 ## Non-Winner Notes
 
 - `b1-structured-json-v1` is archived after an answer-blind 8/14 schema result; the failure and repair boundary are frozen in its receipt.
+- `b1-evidence-answer-v2` is also archived for answer optimization: perfect development JSON compliance accompanied a -17.7734 point answer regression.
 - `m1a-answer-qlora` is the first legal training line. PMC captions remain audit context and are not promoted to evidence targets.
 - `m1b-evidence-sft` remains the evidence-capability line, but starting it without audited visual evidence would train an unsupported claim.
 - `b2-selective-crop` is deliberately deferred because B0's dominant LTG weakness is not evidence that crop is useful; tool work requires an oracle upper bound first.
