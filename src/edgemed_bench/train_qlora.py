@@ -46,6 +46,13 @@ def assistant_loss_labels(prefix_ids: list[int], full_ids: list[int]) -> list[in
     return [-100] * len(prefix_ids) + full_ids[len(prefix_ids) :]
 
 
+def require_finite_gradient_norm(value: Any, step: int) -> float:
+    result = float(value)
+    if not math.isfinite(result):
+        raise FloatingPointError(f"Non-finite gradient norm at optimizer step {step}: {result}")
+    return result
+
+
 def encode_example(processor: Any, row: dict[str, Any], image: Image.Image) -> dict[str, Any]:
     prompt = mcq_prompt(row["question"], row["options"], variant="direct")
     user = {
@@ -95,6 +102,7 @@ def main() -> None:
     parser.add_argument("--lora-alpha", type=int, default=32)
     parser.add_argument("--seed", type=int, default=20260901)
     parser.add_argument("--max-image-pixels", type=int, default=786432)
+    parser.add_argument("--grad-scaler-init-scale", type=float, default=128.0)
     args = parser.parse_args()
 
     import accelerate
@@ -109,6 +117,8 @@ def main() -> None:
         raise ValueError("max-steps and gradient-accumulation must be positive")
     if args.max_image_pixels <= 0:
         raise ValueError("max-image-pixels must be positive")
+    if not math.isfinite(args.grad_scaler_init_scale) or args.grad_scaler_init_scale <= 0:
+        raise ValueError("grad-scaler-init-scale must be finite and positive")
     if not torch.cuda.is_available() or torch.cuda.get_device_capability(0) != (7, 0):
         raise RuntimeError("This frozen training route requires one V100 SM70 GPU")
 
@@ -155,6 +165,7 @@ def main() -> None:
         "micro_batch": 1,
         "max_image_pixels": args.max_image_pixels,
         "image_resize": "aspect-preserving-lanczos",
+        "grad_scaler_init_scale": args.grad_scaler_init_scale,
         "seed": args.seed,
     }
     contract_sha = __import__("hashlib").sha256(
@@ -231,7 +242,7 @@ def main() -> None:
         (parameter for parameter in model.parameters() if parameter.requires_grad),
         lr=args.learning_rate,
     )
-    scaler = torch.amp.GradScaler("cuda")
+    scaler = torch.amp.GradScaler("cuda", init_scale=args.grad_scaler_init_scale)
     torch.cuda.reset_peak_memory_stats()
     started = time.perf_counter()
     losses: list[float] = []
@@ -266,12 +277,24 @@ def main() -> None:
             scaler.scale(scaled_loss).backward()
             losses.append(float(loss.detach()))
             if example_position % args.gradient_accumulation == 0:
+                step = example_position // args.gradient_accumulation
+                scale_before = float(scaler.get_scale())
                 scaler.unscale_(optimizer)
-                grad_norm = float(torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0))
+                grad_norm = require_finite_gradient_norm(
+                    torch.nn.utils.clip_grad_norm_(
+                        model.parameters(), 1.0, error_if_nonfinite=True
+                    ),
+                    step,
+                )
                 scaler.step(optimizer)
                 scaler.update()
+                scale_after = float(scaler.get_scale())
+                if scale_after < scale_before:
+                    raise FloatingPointError(
+                        f"GradScaler skipped optimizer step {step}: "
+                        f"scale {scale_before} -> {scale_after}"
+                    )
                 optimizer.zero_grad(set_to_none=True)
-                step = example_position // args.gradient_accumulation
                 append_jsonl(
                     events,
                     {
@@ -280,6 +303,9 @@ def main() -> None:
                         "step": step,
                         "loss": losses[-1],
                         "grad_norm": grad_norm,
+                        "grad_scale_before": scale_before,
+                        "grad_scale_after": scale_after,
+                        "optimizer_step_applied": True,
                         "peak_cuda_mib": torch.cuda.max_memory_allocated() / 1024**2,
                     },
                     sync=True,
