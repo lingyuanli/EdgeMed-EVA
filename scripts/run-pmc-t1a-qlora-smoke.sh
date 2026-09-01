@@ -8,7 +8,7 @@ gate_report="${EDGEMED_PMC_TRAIN_GATE:-${repo_root}/runs/data-build/pmc-vqa-trai
 surface_root="${EDGEMED_PMC_TRAIN_SURFACES:-/home/ubuntu/data/external/surfaces/pmc-vqa-train-admitted-1968}"
 model_path="${EDGEMED_MODEL_PATH:-/home/ubuntu/models/Qwen3.5-4B}"
 model_receipt="${repo_root}/baselines/local/qwen35-4b-medcmr-b0/source_manifest.json"
-run_dir="${EDGEMED_TRAIN_RUN_DIR:-${repo_root}/runs/qwen35-4b-pmc-t1a-qlora-smoke-v2-20260901}"
+run_dir="${EDGEMED_TRAIN_RUN_DIR:-${repo_root}/runs/qwen35-4b-pmc-t1a-qlora-smoke-v3-20260901}"
 
 cd "${repo_root}"
 test "$(.venv/bin/python -c 'import json,sys; print(json.load(open(sys.argv[1]))["status"])' "${gate_report}")" = passed
@@ -33,5 +33,5 @@ PYTHONPATH=src .venv/bin/python -m edgemed_bench.train_qlora \
   --lora-rank 16 \
   --lora-alpha 32 \
   --max-image-pixels 786432 \
-  --grad-scaler-init-scale 128 \
+  --grad-scaler-init-scale 1 \
   --seed 20260901

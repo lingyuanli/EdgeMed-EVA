@@ -102,7 +102,7 @@ def main() -> None:
     parser.add_argument("--lora-alpha", type=int, default=32)
     parser.add_argument("--seed", type=int, default=20260901)
     parser.add_argument("--max-image-pixels", type=int, default=786432)
-    parser.add_argument("--grad-scaler-init-scale", type=float, default=128.0)
+    parser.add_argument("--grad-scaler-init-scale", type=float, default=1.0)
     args = parser.parse_args()
 
     import accelerate
