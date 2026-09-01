@@ -1,12 +1,13 @@
 import csv
 import hashlib
 import json
+import zipfile
 from pathlib import Path
 
 from PIL import Image
 
 from edgemed_bench.io import read_jsonl
-from edgemed_bench.prepare_external import build_pmc_vqa, build_slake
+from edgemed_bench.prepare_external import build_pmc_vqa, build_slake, extract_zip_safe
 
 
 def make_image(path: Path, color: str) -> str:
@@ -67,3 +68,24 @@ def test_build_slake_keeps_english_validation_and_image_groups(tmp_path: Path) -
     assert rows[0]["source_split"] == "validation"
     assert rows[0]["annotation_type"] == "human"
     assert report["rejected"] == {"not_english": 1}
+
+
+def test_extract_zip_safe_checks_hash_and_traversal(tmp_path: Path) -> None:
+    archive = tmp_path / "safe.zip"
+    with zipfile.ZipFile(archive, "w") as handle:
+        handle.writestr("imgs/example.txt", "ok")
+    digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+    report = extract_zip_safe(archive, tmp_path / "out", digest)
+    assert (tmp_path / "out" / "imgs" / "example.txt").read_text() == "ok"
+    assert report["files"] == 1
+
+    unsafe = tmp_path / "unsafe.zip"
+    with zipfile.ZipFile(unsafe, "w") as handle:
+        handle.writestr("../escape.txt", "bad")
+    unsafe_digest = hashlib.sha256(unsafe.read_bytes()).hexdigest()
+    try:
+        extract_zip_safe(unsafe, tmp_path / "unsafe-out", unsafe_digest)
+    except ValueError as error:
+        assert "Unsafe archive member" in str(error)
+    else:
+        raise AssertionError("path traversal archive was accepted")

@@ -7,8 +7,11 @@ import csv
 import hashlib
 import json
 import re
+import shutil
+import stat
+import zipfile
 from collections import Counter
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
 
 from .io import append_jsonl, sha256_file, write_json
@@ -50,6 +53,39 @@ def _image_record(path: Path) -> tuple[str, str] | None:
     if not path.is_file():
         return None
     return path.as_posix(), sha256_file(path)
+
+
+def extract_zip_safe(archive_path: Path, output_root: Path, expected_sha256: str) -> dict[str, Any]:
+    actual_sha256 = sha256_file(archive_path)
+    if actual_sha256 != expected_sha256:
+        raise ValueError(f"Archive SHA-256 mismatch: {actual_sha256}")
+    output_root.mkdir(parents=True, exist_ok=True)
+    files = 0
+    total_bytes = 0
+    with zipfile.ZipFile(archive_path) as archive:
+        for info in archive.infolist():
+            relative = PurePosixPath(info.filename)
+            mode = info.external_attr >> 16
+            if relative.is_absolute() or ".." in relative.parts:
+                raise ValueError(f"Unsafe archive member: {info.filename}")
+            if stat.S_ISLNK(mode):
+                raise ValueError(f"Archive symlink is not allowed: {info.filename}")
+            if info.is_dir():
+                continue
+            target = output_root.joinpath(*relative.parts).resolve()
+            if not target.is_relative_to(output_root.resolve()):
+                raise ValueError(f"Archive target escaped output root: {info.filename}")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with archive.open(info) as source, target.open("wb") as destination:
+                shutil.copyfileobj(source, destination, length=8 * 1024 * 1024)
+            files += 1
+            total_bytes += info.file_size
+    return {
+        "schema_version": "edgemed-external-extraction/v1",
+        "archive_sha256": actual_sha256,
+        "files": files,
+        "uncompressed_bytes": total_bytes,
+    }
 
 
 def load_pmc_licenses(path: Path) -> dict[str, str]:
@@ -273,6 +309,11 @@ def main() -> None:
     slake.add_argument("--image-root", type=Path, required=True)
     slake.add_argument("--output", type=Path, required=True)
     slake.add_argument("--report", type=Path, required=True)
+    extract = subparsers.add_parser("extract-zip")
+    extract.add_argument("--archive", type=Path, required=True)
+    extract.add_argument("--output-root", type=Path, required=True)
+    extract.add_argument("--expected-sha256", required=True)
+    extract.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
 
     if args.source == "pmc-vqa":
@@ -286,8 +327,11 @@ def main() -> None:
             args.seed,
             args.max_per_image,
         )
-    else:
+    elif args.source == "slake":
         report = build_slake(args.json, args.image_root, args.output, args.report)
+    else:
+        report = extract_zip_safe(args.archive, args.output_root, args.expected_sha256)
+        write_json(args.report, report)
     print(json.dumps(report, sort_keys=True))
 
 
