@@ -3,9 +3,9 @@ set -euo pipefail
 
 repo_root="${EDGEMED_REPO_ROOT:-/home/ubuntu/EdgeMed-EVA}"
 data_base="${EDGEMED_PMC_DATA_BASE:-/home/ubuntu/data/external/pmc-vqa-b56ae594}"
-manifest="${EDGEMED_PMC_TRAIN_MANIFEST:-/home/ubuntu/data/external/manifests/pmc-vqa-train-seed-2000.jsonl}"
-gate_report="${EDGEMED_PMC_TRAIN_GATE:-${repo_root}/runs/data-build/pmc-vqa-train-overlap-gate.json}"
-surface_root="${EDGEMED_PMC_TRAIN_SURFACES:-/home/ubuntu/data/external/surfaces/pmc-vqa-train-seed-2000}"
+manifest="${EDGEMED_PMC_TRAIN_MANIFEST:-/home/ubuntu/data/external/manifests/pmc-vqa-train-admitted-1968.jsonl}"
+gate_report="${EDGEMED_PMC_TRAIN_GATE:-${repo_root}/runs/data-build/pmc-vqa-train-final-gate.json}"
+surface_root="${EDGEMED_PMC_TRAIN_SURFACES:-/home/ubuntu/data/external/surfaces/pmc-vqa-train-admitted-1968}"
 model_path="${EDGEMED_MODEL_PATH:-/home/ubuntu/models/Qwen3.5-4B}"
 model_receipt="${repo_root}/baselines/local/qwen35-4b-medcmr-b0/source_manifest.json"
 run_dir="${EDGEMED_TRAIN_RUN_DIR:-${repo_root}/runs/qwen35-4b-pmc-t1a-qlora-smoke-20260901}"
@@ -33,4 +33,3 @@ PYTHONPATH=src .venv/bin/python -m edgemed_bench.train_qlora \
   --lora-rank 16 \
   --lora-alpha 32 \
   --seed 20260901
-

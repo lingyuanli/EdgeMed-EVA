@@ -54,6 +54,11 @@ for audit. Before admission, source/article/patient identifiers and a manual
 audit of all candidate clusters remain required. Thresholds are frozen before
 inspecting downstream model scores.
 
+For large training pools, the conservative alternative to manual audit is to
+mark every record in an unreviewed candidate cluster as
+`quality_status=quarantined` and `benchmark_overlap=suspected`. The record stays
+in the auditable manifest but is skipped by surface generation and training.
+
 ## Command
 
 ```bash

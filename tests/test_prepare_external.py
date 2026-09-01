@@ -11,6 +11,7 @@ from edgemed_bench.prepare_external import (
     build_pmc_vqa,
     build_slake,
     extract_zip_safe,
+    quarantine_gate_candidates,
     split_surfaces,
 )
 
@@ -153,3 +154,38 @@ def test_split_surfaces_keeps_answers_out_of_inference(tmp_path: Path) -> None:
     assert read_jsonl(references) == [{"answer": "B", "sample_id": "external-1"}]
     assert oct(references.stat().st_mode & 0o777) == "0o600"
     assert report["leakage_boundary"]["inference_has_reference_fields"] is False
+
+
+def test_quarantine_gate_candidates_preserves_but_excludes_records(tmp_path: Path) -> None:
+    manifest = tmp_path / "manifest.jsonl"
+    manifest.write_text(
+        "\n".join(
+            json.dumps(
+                {
+                    "record_id": record_id,
+                    "quality_status": "accepted",
+                    "benchmark_overlap": "none",
+                }
+            )
+            for record_id in ("keep", "flag")
+        )
+        + "\n"
+    )
+    gate = tmp_path / "gate.json"
+    gate.write_text(
+        json.dumps(
+            {
+                "near_image_candidates_rejected_by_confirmation": [
+                    {"record_id": "flag", "benchmark_sample_id": "mcq-1"}
+                ]
+            }
+        )
+    )
+    output = tmp_path / "admitted.jsonl"
+    report = quarantine_gate_candidates(manifest, gate, output, tmp_path / "report.json")
+    rows = {row["record_id"]: row for row in read_jsonl(output)}
+    assert rows["keep"]["quality_status"] == "accepted"
+    assert rows["flag"]["quality_status"] == "quarantined"
+    assert rows["flag"]["benchmark_overlap"] == "suspected"
+    assert report["accepted"] == 1
+    assert report["quarantined"] == 1

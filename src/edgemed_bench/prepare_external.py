@@ -374,6 +374,44 @@ def split_surfaces(
     return report
 
 
+def quarantine_gate_candidates(
+    manifest_path: Path,
+    gate_report_path: Path,
+    output: Path,
+    report_path: Path,
+) -> dict[str, Any]:
+    rows = read_jsonl(manifest_path)
+    gate = json.loads(gate_report_path.read_text())
+    candidate_ids = {
+        item["record_id"]
+        for item in gate.get("near_image_candidates_rejected_by_confirmation", [])
+    }
+    known_ids = {row["record_id"] for row in rows}
+    if not candidate_ids.issubset(known_ids):
+        raise ValueError("Gate report contains records outside the manifest")
+    quarantined = 0
+    for row in rows:
+        if row["record_id"] in candidate_ids:
+            row["quality_status"] = "quarantined"
+            row["benchmark_overlap"] = "suspected"
+            row["quarantine_reason"] = "unreviewed_near_image_candidate"
+            quarantined += 1
+    _write_jsonl(output, rows)
+    report = {
+        "schema_version": "edgemed-external-quarantine/v1",
+        "rows": len(rows),
+        "accepted": len(rows) - quarantined,
+        "quarantined": quarantined,
+        "source_hashes": {
+            "input_manifest_sha256": sha256_file(manifest_path),
+            "input_gate_report_sha256": sha256_file(gate_report_path),
+            "output_manifest_sha256": sha256_file(output),
+        },
+    }
+    write_json(report_path, report)
+    return report
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="source", required=True)
@@ -405,6 +443,11 @@ def main() -> None:
     surfaces.add_argument("--inference-output", type=Path, required=True)
     surfaces.add_argument("--references-output", type=Path, required=True)
     surfaces.add_argument("--report", type=Path, required=True)
+    quarantine = subparsers.add_parser("quarantine-candidates")
+    quarantine.add_argument("--manifest", type=Path, required=True)
+    quarantine.add_argument("--gate-report", type=Path, required=True)
+    quarantine.add_argument("--output", type=Path, required=True)
+    quarantine.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
 
     if args.source == "pmc-vqa":
@@ -426,12 +469,19 @@ def main() -> None:
     elif args.source == "extract-zip":
         report = extract_zip_safe(args.archive, args.output_root, args.expected_sha256)
         write_json(args.report, report)
-    else:
+    elif args.source == "split-surfaces":
         report = split_surfaces(
             args.manifest,
             args.kind,
             args.inference_output,
             args.references_output,
+            args.report,
+        )
+    else:
+        report = quarantine_gate_candidates(
+            args.manifest,
+            args.gate_report,
+            args.output,
             args.report,
         )
     print(json.dumps(report, sort_keys=True))
