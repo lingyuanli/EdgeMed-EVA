@@ -1,0 +1,295 @@
+"""Build source-pinned external medical VQA manifests without benchmark labels."""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import hashlib
+import json
+import re
+from collections import Counter
+from pathlib import Path
+from typing import Any, Iterable
+
+from .io import append_jsonl, sha256_file, write_json
+
+PMC_REVISION = "b56ae594f794867893143b337b4118a835794647"
+SLAKE_REVISION = "a9083ce6c34ac3ffb17671a605962924d8a8f9e9"
+PMC_ALLOWED_LICENSES = {"CC0", "CC BY", "CC BY-SA"}
+PMC_ID_RE = re.compile(r"^(PMC\d+)", re.IGNORECASE)
+CHOICE_PREFIX_RE = re.compile(r"^[A-D]\s*:\s*", re.IGNORECASE)
+
+
+def _group_hash(namespace: str, value: str) -> str:
+    return hashlib.sha256(f"{namespace}:{value}".encode()).hexdigest()
+
+
+def _selection_key(seed: str, source_id: str) -> str:
+    return hashlib.sha256(f"{seed}:{source_id}".encode()).hexdigest()
+
+
+def _safe_relative_path(value: str) -> Path | None:
+    path = Path(value)
+    if not value or path.is_absolute() or ".." in path.parts:
+        return None
+    return path
+
+
+def _clean_choice(value: str) -> str:
+    return CHOICE_PREFIX_RE.sub("", value.strip(), count=1).strip()
+
+
+def _write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        for row in rows:
+            append_jsonl(handle, row)
+
+
+def _image_record(path: Path) -> tuple[str, str] | None:
+    if not path.is_file():
+        return None
+    return path.as_posix(), sha256_file(path)
+
+
+def load_pmc_licenses(path: Path) -> dict[str, str]:
+    licenses: dict[str, str] = {}
+    with path.open(encoding="utf-8-sig", newline="") as handle:
+        for row in csv.DictReader(handle):
+            pmcid = (row.get("Accession ID") or "").strip().upper()
+            license_name = (row.get("License") or "").strip().upper()
+            if pmcid:
+                licenses[pmcid] = license_name
+    return licenses
+
+
+def build_pmc_vqa(
+    csv_path: Path,
+    license_path: Path,
+    image_root: Path,
+    output: Path,
+    report_path: Path,
+    limit: int,
+    seed: str,
+    max_per_image: int = 1,
+) -> dict[str, Any]:
+    if limit <= 0 or max_per_image <= 0:
+        raise ValueError("limit and max_per_image must be positive")
+    licenses = load_pmc_licenses(license_path)
+    candidates: list[dict[str, Any]] = []
+    rejected = Counter()
+    with csv_path.open(encoding="utf-8-sig", newline="") as handle:
+        for row_number, row in enumerate(csv.DictReader(handle), 2):
+            source_id = (row.get("index") or str(row_number - 2)).strip()
+            figure_path = (row.get("Figure_path") or "").strip()
+            pmc_match = PMC_ID_RE.match(figure_path)
+            pmcid = pmc_match.group(1).upper() if pmc_match else ""
+            article_license = licenses.get(pmcid, "")
+            answer = (row.get("Answer") or "").strip().upper()
+            choices = {letter: _clean_choice(row.get(f"Choice {letter}") or "") for letter in "ABCD"}
+            if (row.get("split") or "").strip().casefold() != "train":
+                rejected["not_train"] += 1
+                continue
+            if not pmcid or article_license not in PMC_ALLOWED_LICENSES:
+                rejected["license_or_pmcid"] += 1
+                continue
+            if answer not in choices or not all(choices.values()):
+                rejected["invalid_answer_or_choices"] += 1
+                continue
+            question = (row.get("Question") or "").strip()
+            if not question:
+                rejected["empty_question"] += 1
+                continue
+            relative_image_path = _safe_relative_path(figure_path)
+            if relative_image_path is None:
+                rejected["unsafe_image_path"] += 1
+                continue
+            image_path = image_root / relative_image_path
+            image_info = _image_record(image_path)
+            if image_info is None:
+                rejected["missing_image"] += 1
+                continue
+            _, image_sha = image_info
+            candidates.append(
+                {
+                    "source_id": source_id,
+                    "figure_path": figure_path,
+                    "pmcid": pmcid,
+                    "article_license": article_license,
+                    "question": question,
+                    "answer": answer,
+                    "answer_text": choices[answer],
+                    "options": choices,
+                    "source_caption": (row.get("Caption") or "").strip(),
+                    "image_sha256": image_sha,
+                    "rank": _selection_key(seed, source_id),
+                }
+            )
+
+    candidates.sort(key=lambda row: (row["rank"], row["source_id"]))
+    selected: list[dict[str, Any]] = []
+    per_image = Counter()
+    for row in candidates:
+        if per_image[row["figure_path"]] >= max_per_image:
+            rejected["per_image_cap"] += 1
+            continue
+        per_image[row["figure_path"]] += 1
+        selected.append(row)
+        if len(selected) == limit:
+            break
+
+    manifest = []
+    for index, row in enumerate(selected):
+        manifest.append(
+            {
+                "record_id": f"pmc-vqa-v2-{row['source_id']}",
+                "source_dataset": "RadGenome/PMC-VQA-v2",
+                "source_version": PMC_REVISION,
+                "source_record_id": row["source_id"],
+                "source_article_id": row["pmcid"],
+                "license": f"CC-BY-SA; source-article={row['article_license']}",
+                "patient_group_hash": _group_hash("pmc-article", row["pmcid"]),
+                "image_path": row["figure_path"],
+                "image_sha256": row["image_sha256"],
+                "question": row["question"],
+                "options": row["options"],
+                "answer": row["answer"],
+                "answer_text": row["answer_text"],
+                "source_caption": row["source_caption"],
+                "evidence_source": "caption-derived",
+                "evidence_target_eligible": False,
+                "annotation_type": "synthetic",
+                "quality_status": "accepted",
+                "benchmark_overlap": "none",
+                "selection_index": index,
+            }
+        )
+    _write_jsonl(output, manifest)
+    report = {
+        "schema_version": "edgemed-external-build/v1",
+        "source_dataset": "RadGenome/PMC-VQA-v2",
+        "source_version": PMC_REVISION,
+        "source_hashes": {
+            "csv_sha256": sha256_file(csv_path),
+            "license_csv_sha256": sha256_file(license_path),
+        },
+        "selection": {"seed": seed, "limit": limit, "max_per_image": max_per_image},
+        "eligible_before_selection": len(candidates),
+        "written": len(manifest),
+        "unique_images": len(per_image),
+        "rejected": dict(sorted(rejected.items())),
+    }
+    write_json(report_path, report)
+    return report
+
+
+def build_slake(
+    json_path: Path,
+    image_root: Path,
+    output: Path,
+    report_path: Path,
+) -> dict[str, Any]:
+    raw = json.loads(json_path.read_text(encoding="utf-8"))
+    if not isinstance(raw, list):
+        raise TypeError("SLAKE validation source must be a JSON array")
+    manifest: list[dict[str, Any]] = []
+    rejected = Counter()
+    image_hashes: dict[str, str] = {}
+    for source_index, row in enumerate(raw):
+        if not isinstance(row, dict):
+            rejected["not_object"] += 1
+            continue
+        if row.get("q_lang") != "en":
+            rejected["not_english"] += 1
+            continue
+        image_name = str(row.get("img_name") or "").strip()
+        question = str(row.get("question") or "").strip()
+        answer = str(row.get("answer") or "").strip()
+        if not image_name or not question or not answer:
+            rejected["missing_required_value"] += 1
+            continue
+        relative_image_path = _safe_relative_path(image_name)
+        if relative_image_path is None:
+            rejected["unsafe_image_path"] += 1
+            continue
+        image_path = image_root / relative_image_path
+        if image_name not in image_hashes:
+            image_info = _image_record(image_path)
+            if image_info is None:
+                rejected["missing_image"] += 1
+                continue
+            image_hashes[image_name] = image_info[1]
+        qid = str(row.get("qid", source_index))
+        manifest.append(
+            {
+                "record_id": f"slake-validation-{qid}",
+                "source_dataset": "BoKelvin/SLAKE",
+                "source_version": SLAKE_REVISION,
+                "source_record_id": qid,
+                "source_split": "validation",
+                "license": "CC-BY-4.0",
+                "patient_group_hash": _group_hash("slake-image", image_name),
+                "image_path": image_name,
+                "image_sha256": image_hashes[image_name],
+                "question": question,
+                "answer": answer,
+                "annotation_type": "human",
+                "quality_status": "accepted",
+                "benchmark_overlap": "none",
+                "slake_metadata": {
+                    key: row.get(key)
+                    for key in ("location", "modality", "answer_type", "base_type", "content_type")
+                },
+            }
+        )
+    _write_jsonl(output, manifest)
+    report = {
+        "schema_version": "edgemed-external-build/v1",
+        "source_dataset": "BoKelvin/SLAKE",
+        "source_version": SLAKE_REVISION,
+        "source_hashes": {"validation_json_sha256": sha256_file(json_path)},
+        "written": len(manifest),
+        "unique_images": len(image_hashes),
+        "rejected": dict(sorted(rejected.items())),
+    }
+    write_json(report_path, report)
+    return report
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest="source", required=True)
+    pmc = subparsers.add_parser("pmc-vqa")
+    pmc.add_argument("--csv", type=Path, required=True)
+    pmc.add_argument("--license-csv", type=Path, required=True)
+    pmc.add_argument("--image-root", type=Path, required=True)
+    pmc.add_argument("--output", type=Path, required=True)
+    pmc.add_argument("--report", type=Path, required=True)
+    pmc.add_argument("--limit", type=int, default=2000)
+    pmc.add_argument("--seed", default="edgemed-pmc-vqa-v2-seed-20260901")
+    pmc.add_argument("--max-per-image", type=int, default=1)
+    slake = subparsers.add_parser("slake")
+    slake.add_argument("--json", type=Path, required=True)
+    slake.add_argument("--image-root", type=Path, required=True)
+    slake.add_argument("--output", type=Path, required=True)
+    slake.add_argument("--report", type=Path, required=True)
+    args = parser.parse_args()
+
+    if args.source == "pmc-vqa":
+        report = build_pmc_vqa(
+            args.csv,
+            args.license_csv,
+            args.image_root,
+            args.output,
+            args.report,
+            args.limit,
+            args.seed,
+            args.max_per_image,
+        )
+    else:
+        report = build_slake(args.json, args.image_root, args.output, args.report)
+    print(json.dumps(report, sort_keys=True))
+
+
+if __name__ == "__main__":
+    main()

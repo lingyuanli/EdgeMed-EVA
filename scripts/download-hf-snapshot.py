@@ -35,6 +35,11 @@ def main() -> None:
     parser.add_argument("--revision", default="main")
     parser.add_argument("--env-file", type=Path)
     parser.add_argument("--max-workers", type=int, default=1)
+    parser.add_argument(
+        "--allow-pattern",
+        action="append",
+        help="Download only matching files; repeat for multiple exact paths or globs.",
+    )
     args = parser.parse_args()
 
     load_token(args.env_file)
@@ -48,6 +53,7 @@ def main() -> None:
         revision=args.revision,
         max_workers=args.max_workers,
         token=os.environ.get("HF_TOKEN"),
+        allow_patterns=args.allow_pattern,
     )
     print(f"snapshot_ready={path}")
 
