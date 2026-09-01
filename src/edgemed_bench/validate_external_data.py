@@ -161,6 +161,7 @@ def validate_external_data(
                 distinctive_index[token].add(index)
 
     benchmark_dhashes = _DHashBKTree()
+    benchmark_dhash_cache: dict[Path, int] = {}
     file_problems: list[dict[str, Any]] = []
     for row in benchmark_rows:
         path = (benchmark_data_root / row["image_path"]).resolve()
@@ -169,9 +170,12 @@ def validate_external_data(
                 {"record_id": row["sample_id"], "kind": "missing_benchmark_image", "path": str(path)}
             )
             continue
-        benchmark_dhashes.add(row["sample_id"], image_dhash(path))
+        if path not in benchmark_dhash_cache:
+            benchmark_dhash_cache[path] = image_dhash(path)
+        benchmark_dhashes.add(row["sample_id"], benchmark_dhash_cache[path])
 
     overlaps: list[dict[str, Any]] = []
+    external_file_cache: dict[Path, tuple[str, int]] = {}
     checked = 0
     for row in rows:
         if row["quality_status"] != "accepted":
@@ -182,7 +186,9 @@ def validate_external_data(
         if not path.is_file():
             file_problems.append({"record_id": record_id, "kind": "missing_external_image", "path": str(path)})
             continue
-        actual_sha = sha256_file(path)
+        if path not in external_file_cache:
+            external_file_cache[path] = (sha256_file(path), image_dhash(path))
+        actual_sha, dhash = external_file_cache[path]
         if actual_sha != row["image_sha256"]:
             file_problems.append(
                 {
@@ -232,7 +238,6 @@ def validate_external_data(
                         }
                     )
 
-        dhash = image_dhash(path)
         for sample_id, distance in benchmark_dhashes.query(dhash, image_hamming_threshold):
             overlaps.append(
                 {
@@ -257,6 +262,10 @@ def validate_external_data(
         "thresholds": {
             "near_text_sequence_ratio": text_similarity_threshold,
             "near_image_dhash_hamming": image_hamming_threshold,
+        },
+        "unique_images_checked": {
+            "external": len(external_file_cache),
+            "benchmark": len(benchmark_dhash_cache),
         },
     }
 
