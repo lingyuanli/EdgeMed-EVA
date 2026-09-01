@@ -8,7 +8,7 @@
 - primary optimize submode: `seed`
 - incumbent: `qwen35-4b-medcmr-b0`, verified MCQ accuracy `27.1690%`
 - promoted line: `B1 structured evidence`, prompt-only diagnostic with unchanged model/data/image preprocessing/decoding
-- active implementation candidate: `b1-evidence-answer-v2`; this is the one allowed format repair after v1
+- active implementation candidate: `b1-evidence-answer-v2`, operationally smoke-verified
 - full-eval queue: empty; Med-CMR test scoring is prohibited until the candidate and evaluation budget are frozen
 
 ## Control Checks
@@ -30,9 +30,9 @@
 - [x] B1-v1 implementation tests pass in the remote project environment (`22 passed`)
 - [x] B1-v1 no-reference V100 smoke completes with frozen contract
 - [x] B1-v1 failure classified and archived: 8/14 strict schema; do not rerun unchanged
-- [ ] B1-v2 repair implementation tests pass
-- [ ] B1-v2 no-reference V100 smoke completes with frozen contract
-- [ ] Smoke schema/parse/latency/memory receipt recorded
+- [x] B1-v2 repair implementation tests pass (`24 passed`)
+- [x] B1-v2 no-reference V100 smoke completes with frozen contract
+- [x] Smoke schema/parse/latency/memory receipt recorded
 
 ## Smoke Queue
 
@@ -50,4 +50,4 @@
 
 ## Next Concrete Action
 
-Implement the single `b1-evidence-answer-v2` repair, run tests, then execute its bounded answer-blind V100 smoke.
+Define and implement the external-development data manifest, provenance validator, and exact/near-overlap gate before any B1 accuracy comparison or SFT data build.

@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-01
-当前主阶段：`B1 structured evidence seed`
+当前主阶段：`B1 smoke verified / external development data gate`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -64,7 +64,7 @@
 ## 5. Checklist Link
 
 - checklist path：`CHECKLIST.md`。
-- next item：实现 `b1-structured-json-v1` 并运行不访问 references、不计 accuracy 的 14 样本 V100 operational smoke；完整 test 评测需等待外部 development 数据和 prompt 冻结。
+- next item：实现外部 development 数据 manifest、provenance validator 与 exact/near-overlap gate；B1-v2 已通过 14/14 answer-blind operational smoke，但在数据 gate 前不得做 accuracy 比较。
 
 ## 6. Revision Log
 
@@ -81,3 +81,4 @@
 | 2026-08-31 | 最终 64-token contract smoke：14/14 完成，13/14 可解析，17.33 秒，峰值 3,419 MiB；256-token 诊断仍使同一格式失败样本截断 | 继续增加 token 不能解决该模型的 prompt 不遵循 | 保持 64-token contract，将该类输出计 invalid；允许启动全量 16,655 MCQ |
 | 2026-08-31 | 全量 MCQ 通过 tmux 启动，run contract `7de0a22e…`；首轮检查 predictions 从 47 增至 61，真实 Python/GPU/log 均移动 | 跨过仅有控制面状态的假运行边界 | 状态保持 `running`；完成前不报告正式准确率，收据见 baseline `execution.md` |
 | 2026-09-01 | 全量 MCQ 完成并经独立实现逐样本复算 | 16,655 个唯一样本完整覆盖，退出码 0，运行/来源/预测哈希一致 | MCQ 以 `verified_diverged` 收口：27.1690%（4,525/16,655）；Open 因 exact judge 不可用正式降级为 `operational_but_incomparable` |
+| 2026-09-01 | B1 v1/v2 在同一 14 样本 answer-blind smoke 上完成一次预注册格式修复 | v1 仅 8/14 严格 schema；v2 简化为短 observation + answer 后 14/14 严格 JSON，且未访问 references | B1-v2 仅获 operational promotion；准确率评测继续由外部 development 数据 gate 阻塞 |
