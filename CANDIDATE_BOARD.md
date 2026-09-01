@@ -9,7 +9,7 @@ Candidates are ranked by information gain, feasibility on one V100, test-compara
 | Rank | Candidate ID | Level | Parent | Strategy | Mechanism / Layer | Status | Expected Gain | Observed Result | Promote / Archive |
 |---:|---|---|---|---|---|---|---|---|---|
 | 1 | `b1-evidence-answer-v2` | implementation | `b1-structured-json-v1` | debug | prompt + representation / Tier1 | `smoke_passed` | Tests the minimum evidence-attribution surface after v1 proved too complex for reliable zero-shot formatting | 14/14 strict JSON and ≤20-word observations; no accuracy computed | **promote to external-development evaluation after data gate** |
-| 2 | `m1b-evidence-sft` | brief | `qwen35-4b-medcmr-b0` | explore | supervised objective / Tier2 | `held_data_gate` | Largest plausible capability gain, especially on LTG, while enabling evidence metrics | n/a | hold until 2k clean seed + golden validation pass provenance/overlap QA |
+| 2 | `m1b-evidence-sft` | brief | `qwen35-4b-medcmr-b0` | explore | supervised objective / Tier2 | `source_frozen` | Largest plausible capability gain, especially on LTG, while enabling evidence metrics | PMC-VQA v2 seed and SLAKE validation revisions frozen; no manifest admitted yet | hold until 2k clean seed + golden validation pass provenance/overlap QA |
 | 3 | `b2-selective-crop` | brief | `qwen35-4b-medcmr-b0` | explore | tool/system / Tier2 | `held_oracle_gate` | May improve SOD/FDD if native resolution is limiting | n/a | hold until an answer-blind oracle-crop study shows useful upper bound |
 | 4 | `b1-structured-json-v1` | implementation | `qwen35-4b-medcmr-b0` | exploit | prompt + representation / Tier1 | `smoke_failed` | Structured evidence, competing hypotheses, and answer | 14/14 completed but only 8/14 strict schema; 4 cardinality failures and 2 truncations | archive; do not rerun unchanged |
 
@@ -28,7 +28,7 @@ Candidates are ranked by information gain, feasibility on one V100, test-compara
 - main risks: verbose output truncation, cosmetic evidence unrelated to the answer, or prompt-induced accuracy regression.
 - disconfirmation: operational parse rate below 13/14 in this single repair smoke, or later clean-development accuracy materially below direct B0.
 - promote now: yes, operational smoke passed; development evaluation remains data-gated.
-- next target: implement external-development provenance and overlap QA, then hand the frozen B1 contract to `experiment`.
+- next target: build hash-bound PMC-VQA/SLAKE manifests and pass external-development provenance and overlap QA, then hand the frozen B1 contract to `experiment`.
 
 ## Non-Winner Notes
 

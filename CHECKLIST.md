@@ -52,6 +52,6 @@
 - [x] external development manifest schema designed
 - [x] provenance/file/exact/near-overlap validator implemented
 - [x] validator unit/CLI tests pass in the project environment
-- [ ] external source dataset selected with acceptable license
+- [x] external source datasets selected and immutable revisions/license boundaries recorded
 - [ ] real external manifest generated and gate report is `passed`
 - [ ] golden validation annotation protocol frozen before model scoring

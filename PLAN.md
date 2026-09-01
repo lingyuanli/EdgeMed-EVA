@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-01
-当前主阶段：`B1 smoke verified / external development data gate`
+当前主阶段：`B1 smoke verified / external source frozen / manifest build`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -89,4 +89,7 @@
 - changed surface: external-data admission only; B0/B1 prompts, model, inference, and scorer remain frozen.
 - primary output: `edgemed-external-data-gate/v1` report with `status=passed`.
 - abandonment condition: license/provenance cannot be established, real files cannot be hash-bound, or overlap findings cannot be resolved without using Med-CMR labels.
-- next execution: validate unit fixtures, then survey and select one license-compatible external source before downloading or training.
+- frozen training seed: PMC-VQA v2 at HF revision `b56ae594f794867893143b337b4118a835794647`; synthetic caption-derived MCQ only, with article-level license join.
+- frozen gold development source: SLAKE official validation at HF revision `a9083ce6c34ac3ffb17671a605962924d8a8f9e9`; English records only and never used for training.
+- deferred source: MS-CXR/VinDr-CXR evidence boxes require credentialed PhysioNet access and do not block cycle 1.
+- next execution: implement deterministic source builders, download named hash-bound files, generate real manifests, and run the overlap gate before any training.

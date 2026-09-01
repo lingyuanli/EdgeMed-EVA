@@ -33,6 +33,7 @@
 - [x] B1-v2 repair implementation tests pass (`24 passed`)
 - [x] B1-v2 no-reference V100 smoke completes with frozen contract
 - [x] Smoke schema/parse/latency/memory receipt recorded
+- [x] PMC-VQA v2 training seed and SLAKE validation sources frozen by immutable revision
 
 ## Smoke Queue
 
@@ -50,4 +51,4 @@
 
 ## Next Concrete Action
 
-Define and implement the external-development data manifest, provenance validator, and exact/near-overlap gate before any B1 accuracy comparison or SFT data build.
+Build real PMC-VQA/SLAKE manifests and pass the implemented exact/near-overlap gate before any B1 accuracy comparison or SFT training.
