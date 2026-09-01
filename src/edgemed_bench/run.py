@@ -86,6 +86,8 @@ def main() -> None:
     parser.add_argument("--data-root", type=Path, required=True)
     parser.add_argument("--model-path", type=Path, required=True)
     parser.add_argument("--model-source-manifest", type=Path, required=True)
+    parser.add_argument("--adapter-path", type=Path)
+    parser.add_argument("--adapter-source-manifest", type=Path)
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--sample-id-file", type=Path)
@@ -94,6 +96,19 @@ def main() -> None:
     parser.add_argument("--sync-every", type=int, default=10)
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
+    if (args.adapter_path is None) != (args.adapter_source_manifest is None):
+        raise ValueError("adapter-path and adapter-source-manifest must be provided together")
+    if args.adapter_path is not None:
+        adapter_source = json.loads(args.adapter_source_manifest.read_text())
+        if adapter_source.get("status") != "completed" or not adapter_source.get("adapter_hashes"):
+            raise ValueError("Adapter source manifest is not a completed hash-bound training run")
+        expected_adapter_path = (args.adapter_source_manifest.parent / "adapter").resolve()
+        if args.adapter_path.resolve() != expected_adapter_path:
+            raise ValueError("Adapter path is not bound to its source training run")
+        for relative_path, expected_sha256 in adapter_source["adapter_hashes"].items():
+            artifact_path = (args.adapter_source_manifest.parent / relative_path).resolve()
+            if not artifact_path.is_file() or sha256_file(artifact_path) != expected_sha256:
+                raise ValueError(f"Adapter artifact missing or changed: {relative_path}")
 
     import accelerate
     import bitsandbytes
@@ -158,6 +173,9 @@ def main() -> None:
         contract["prompt_variant"] = args.prompt_variant
     if option_letters != "ABCDE":
         contract["option_letters"] = option_letters
+    if args.adapter_path is not None:
+        contract["adapter_path"] = str(args.adapter_path.resolve())
+        contract["adapter_source_manifest_sha256"] = sha256_file(args.adapter_source_manifest)
     contract_sha = __import__("hashlib").sha256(
         json.dumps(contract, sort_keys=True).encode()
     ).hexdigest()
@@ -208,6 +226,12 @@ def main() -> None:
         attn_implementation="eager",
         low_cpu_mem_usage=True,
     )
+    if args.adapter_path is not None:
+        import peft
+        from peft import PeftModel
+
+        model = PeftModel.from_pretrained(model, args.adapter_path, is_trainable=False)
+        manifest["environment"]["peft"] = peft.__version__
     model.eval()
     model_load_seconds = time.perf_counter() - load_started
     torch.cuda.reset_peak_memory_stats()
