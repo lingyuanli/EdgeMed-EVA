@@ -108,6 +108,8 @@ def build_pmc_vqa(
     limit: int,
     seed: str,
     max_per_image: int = 1,
+    required_split: str = "train",
+    cohort: str = "train-seed",
 ) -> dict[str, Any]:
     if limit <= 0 or max_per_image <= 0:
         raise ValueError("limit and max_per_image must be positive")
@@ -123,8 +125,8 @@ def build_pmc_vqa(
             article_license = licenses.get(pmcid, "")
             answer = (row.get("Answer") or "").strip().upper()
             choices = {letter: _clean_choice(row.get(f"Choice {letter}") or "") for letter in "ABCD"}
-            if (row.get("split") or "").strip().casefold() != "train":
-                rejected["not_train"] += 1
+            if (row.get("split") or "").strip().casefold() != required_split.casefold():
+                rejected["wrong_split"] += 1
                 continue
             if not pmcid or article_license not in PMC_ALLOWED_LICENSES:
                 rejected["license_or_pmcid"] += 1
@@ -178,10 +180,12 @@ def build_pmc_vqa(
     for index, row in enumerate(selected):
         manifest.append(
             {
-                "record_id": f"pmc-vqa-v2-{row['source_id']}",
+                "record_id": f"pmc-vqa-v2-{cohort}-{row['source_id']}",
                 "source_dataset": "RadGenome/PMC-VQA-v2",
                 "source_version": PMC_REVISION,
                 "source_record_id": row["source_id"],
+                "source_split": required_split,
+                "cohort": cohort,
                 "source_article_id": row["pmcid"],
                 "license": f"CC-BY-SA; source-article={row['article_license']}",
                 "patient_group_hash": _group_hash("pmc-article", row["pmcid"]),
@@ -209,7 +213,13 @@ def build_pmc_vqa(
             "csv_sha256": sha256_file(csv_path),
             "license_csv_sha256": sha256_file(license_path),
         },
-        "selection": {"seed": seed, "limit": limit, "max_per_image": max_per_image},
+        "selection": {
+            "seed": seed,
+            "limit": limit,
+            "max_per_image": max_per_image,
+            "required_split": required_split,
+            "cohort": cohort,
+        },
         "eligible_before_selection": len(candidates),
         "written": len(manifest),
         "unique_images": len(per_image),
@@ -304,6 +314,8 @@ def main() -> None:
     pmc.add_argument("--limit", type=int, default=2000)
     pmc.add_argument("--seed", default="edgemed-pmc-vqa-v2-seed-20260901")
     pmc.add_argument("--max-per-image", type=int, default=1)
+    pmc.add_argument("--required-split", choices=("train", "test"), default="train")
+    pmc.add_argument("--cohort", default="train-seed")
     slake = subparsers.add_parser("slake")
     slake.add_argument("--json", type=Path, required=True)
     slake.add_argument("--image-root", type=Path, required=True)
@@ -326,6 +338,8 @@ def main() -> None:
             args.limit,
             args.seed,
             args.max_per_image,
+            args.required_split,
+            args.cohort,
         )
     elif args.source == "slake":
         report = build_slake(args.json, args.image_root, args.output, args.report)

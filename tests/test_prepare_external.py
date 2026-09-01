@@ -48,6 +48,7 @@ def test_build_pmc_vqa_is_license_filtered_and_deterministic(tmp_path: Path) -> 
     assert rows[0]["annotation_type"] == "synthetic"
     assert rows[0]["evidence_target_eligible"] is False
     assert report["rejected"] == {"license_or_pmcid": 1, "per_image_cap": 1}
+    assert report["selection"]["required_split"] == "train"
 
 
 def test_build_slake_keeps_english_validation_and_image_groups(tmp_path: Path) -> None:

@@ -18,6 +18,7 @@ decision. It does not treat dataset-card claims as experimental results.
 | File | Bytes | SHA-256 / LFS oid |
 |---|---:|---|
 | `train_2.csv` | 56,703,454 | `15ead4a27b5365d1b5dc5faf1fd2246a6a5aa1ca5c2358a19532ff78c2870084` |
+| `test_2.csv` | 12,446,345 | `d57d567f997955e7001ec4325323a2bca66d570070466291d5ec12882ff5ba09` |
 | `images_2.zip` | 2,206,255,503 | `727643d0ae9182cb5572b43a74ed4100eb0920b1d83e55ed4054a393d672cb4a` |
 | `oa_comm_use_file_list.csv` | 496,021,536 | `7a56eef6527332d2eb47fffa1356ffe19548b8984823a533d174fd70bb38b86f` |
 
@@ -25,6 +26,13 @@ decision. It does not treat dataset-card claims as experimental results.
 `Caption`, `Question`, four choices, `Answer`, and `split`. The questions and
 answers are machine-generated from article figures/captions, so admitted
 records must be labelled `annotation_type=synthetic`, never `human`.
+
+Direct comparison of the frozen CSVs found 152,603 train rows over 135,339
+images/62,503 PMC articles and 33,430 test rows over 29,021 images/11,112 PMC
+articles. Exact figure-name overlap and PMCID overlap were both zero. Cycle 1
+therefore selects training seeds only from train and a 512-record MCQ development
+cohort only from test, with different frozen seeds and at most one question per
+image.
 
 ## SLAKE
 
@@ -53,4 +61,3 @@ refer to the same image.
 
 These are later localization-evaluator candidates. They are not dependencies
 of cycle 1 and must not be silently replaced with mirrors of unknown provenance.
-

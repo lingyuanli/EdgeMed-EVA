@@ -90,6 +90,7 @@
 - primary output: `edgemed-external-data-gate/v1` report with `status=passed`.
 - abandonment condition: license/provenance cannot be established, real files cannot be hash-bound, or overlap findings cannot be resolved without using Med-CMR labels.
 - frozen training seed: PMC-VQA v2 at HF revision `b56ae594f794867893143b337b4118a835794647`; synthetic caption-derived MCQ only, with article-level license join.
-- frozen gold development source: SLAKE official validation at HF revision `a9083ce6c34ac3ffb17671a605962924d8a8f9e9`; English records only and never used for training.
+- frozen primary MCQ development source: 512 deterministic records from PMC-VQA v2 official test; frozen inspection found zero image and PMCID overlap with its train source.
+- frozen cross-dataset source: SLAKE official validation at HF revision `a9083ce6c34ac3ffb17671a605962924d8a8f9e9`; English records only and never used for training.
 - deferred source: MS-CXR/VinDr-CXR evidence boxes require credentialed PhysioNet access and do not block cycle 1.
 - next execution: implement deterministic source builders, download named hash-bound files, generate real manifests, and run the overlap gate before any training.
