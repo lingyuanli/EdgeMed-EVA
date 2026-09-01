@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
-更新：2026-08-31
-当前主阶段：`execution`
+更新：2026-09-01
+当前主阶段：`MCQ verified / optimization next`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -64,7 +64,7 @@
 ## 5. Checklist Link
 
 - checklist path：`CHECKLIST.md`。
-- next item：完成 archive 断点续传与 SHA-256 校验，在 V100 环境运行测试和结构化数据准备。
+- next item：以冻结 B0 的逐样本错误为输入做 slice/parse/error taxonomy，先建立不看 test 答案的开发集与训练数据，再按单变量消融迭代结构化 Agent、SFT/LoRA 和证据约束。
 
 ## 6. Revision Log
 
@@ -80,3 +80,4 @@
 | 2026-08-31 | non-thinking smoke 中 10/14 为单字母，3/14 以明确 `A)`–`E)` 标签开头，1/14 被 16 tokens 截断；论文仅披露 regex extraction | 严格整行 parser 与任意 16-token cap 造成实现性 parse loss | 冻结行首 option-label regex 和 64-token MCQ 上限；不从正文猜字母、不依据正确率调参，执行最终 contract smoke |
 | 2026-08-31 | 最终 64-token contract smoke：14/14 完成，13/14 可解析，17.33 秒，峰值 3,419 MiB；256-token 诊断仍使同一格式失败样本截断 | 继续增加 token 不能解决该模型的 prompt 不遵循 | 保持 64-token contract，将该类输出计 invalid；允许启动全量 16,655 MCQ |
 | 2026-08-31 | 全量 MCQ 通过 tmux 启动，run contract `7de0a22e…`；首轮检查 predictions 从 47 增至 61，真实 Python/GPU/log 均移动 | 跨过仅有控制面状态的假运行边界 | 状态保持 `running`；完成前不报告正式准确率，收据见 baseline `execution.md` |
+| 2026-09-01 | 全量 MCQ 完成并经独立实现逐样本复算 | 16,655 个唯一样本完整覆盖，退出码 0，运行/来源/预测哈希一致 | MCQ 以 `verified_diverged` 收口：27.1690%（4,525/16,655）；Open 因 exact judge 不可用正式降级为 `operational_but_incomparable` |

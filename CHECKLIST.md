@@ -5,7 +5,7 @@
 - baseline id：`qwen35-4b-medcmr-b0`
 - route：`reproduce`
 - owner stage：`baseline`
-- current phase：`execution`
+- current phase：`MCQ verified / optimization next`
 
 ## Core
 
@@ -17,9 +17,9 @@
 - [x] runner/evaluator 已实现并通过测试
 - [x] bounded smoke 已运行一次且产物完整
 - [x] real run 决策已根据 smoke 吞吐和磁盘证据记录
-- [ ] 正式运行已完成，预期结果文件与指标齐全
-- [ ] 逐样本结果可独立复算且 verification report 完成
-- [ ] baseline 已接受、降级或阻塞，并留下 durable note
+- [x] 正式 MCQ 运行已完成，预期结果文件与指标齐全
+- [x] MCQ 逐样本结果可独立复算且 verification report 完成
+- [x] baseline 已收口：MCQ `verified_diverged`；Open `operational_but_incomparable`
 
 ## Source Audit
 
@@ -28,7 +28,7 @@
 - [x] official HF dataset identified and revision frozen
 - [x] paper read enough to restate MCQ/open metric family
 - [x] supplementary generation/scoring prompt 已核验
-- [ ] DeepSeek-V3.2-Exp 不可用偏差已获得官方替代/作者确认，或 open 被正式降级
+- [x] DeepSeek-V3.2-Exp 不可用偏差已正式记录，Open 降级为 `operational_but_incomparable`
 - [ ] 数据内许可/来源边界核验完成
 
 ## Runtime
@@ -41,7 +41,7 @@
 
 ## Closeout
 
-- [ ] concise trusted baseline summary written
+- [x] concise trusted baseline summary written
 - [x] canonical `baselines/local/qwen35-4b-medcmr-b0/json/metric_contract.json` written
-- [ ] baseline artifact/report written
-- [ ] next stage named explicitly
+- [x] baseline artifact/report written
+- [x] next stage named explicitly
