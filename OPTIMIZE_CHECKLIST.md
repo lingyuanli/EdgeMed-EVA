@@ -34,6 +34,7 @@
 - [x] B1-v2 no-reference V100 smoke completes with frozen contract
 - [x] Smoke schema/parse/latency/memory receipt recorded
 - [x] PMC-VQA v2 training seed and SLAKE validation sources frozen by immutable revision
+- [x] SLAKE English validation manifest admitted: 1,053 rows, 96 images, zero confirmed Med-CMR overlap
 
 ## Smoke Queue
 
