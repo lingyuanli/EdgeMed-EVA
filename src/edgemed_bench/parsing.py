@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 
 ANSWER_MARKER = re.compile(r"(?im)^\s*answer\s*[:\-]\s*[\(\[]?([A-E])[\)\]]?\s*[\.!]?\s*$")
@@ -25,6 +26,34 @@ def parse_mcq(text: str) -> tuple[str | None, str]:
     if line:
         return line.group(1).upper(), "standalone_line"
     return None, "invalid"
+
+
+def parse_structured_mcq(
+    text: str,
+) -> tuple[str | None, str | None, list[str] | None, str]:
+    """Parse the strict B1 JSON surface without repairing or guessing fields."""
+
+    try:
+        value = json.loads(text.strip())
+    except (json.JSONDecodeError, TypeError):
+        return None, None, None, "invalid_structured_json"
+    if not isinstance(value, dict) or set(value) != {"observation", "hypotheses", "answer"}:
+        return None, None, None, "invalid_structured_schema"
+    observation = value["observation"]
+    hypotheses = value["hypotheses"]
+    answer = value["answer"]
+    if not isinstance(observation, str) or not observation.strip():
+        return None, None, None, "invalid_structured_schema"
+    if (
+        not isinstance(hypotheses, list)
+        or not 1 <= len(hypotheses) <= 3
+        or any(not isinstance(item, str) or item not in "ABCDE" for item in hypotheses)
+        or len(set(hypotheses)) != len(hypotheses)
+    ):
+        return None, None, None, "invalid_structured_schema"
+    if not isinstance(answer, str) or answer not in "ABCDE" or answer not in hypotheses:
+        return None, None, None, "invalid_structured_schema"
+    return answer, observation.strip(), hypotheses, "structured_json"
 
 
 def parse_open(text: str) -> tuple[str | None, str | None, str]:

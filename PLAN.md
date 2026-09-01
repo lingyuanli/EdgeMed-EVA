@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-01
-当前主阶段：`MCQ verified / optimization next`
+当前主阶段：`B1 structured evidence seed`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -64,7 +64,7 @@
 ## 5. Checklist Link
 
 - checklist path：`CHECKLIST.md`。
-- next item：以冻结 B0 的逐样本错误为输入做 slice/parse/error taxonomy，先建立不看 test 答案的开发集与训练数据，再按单变量消融迭代结构化 Agent、SFT/LoRA 和证据约束。
+- next item：实现 `b1-structured-json-v1` 并运行不访问 references、不计 accuracy 的 14 样本 V100 operational smoke；完整 test 评测需等待外部 development 数据和 prompt 冻结。
 
 ## 6. Revision Log
 

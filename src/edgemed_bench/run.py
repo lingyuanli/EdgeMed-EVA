@@ -15,8 +15,8 @@ from typing import Any
 from PIL import Image
 
 from .io import append_jsonl, read_jsonl, reject_reference_fields, sha256_file, write_json
-from .parsing import parse_mcq, parse_open
-from .prompts import mcq_prompt, open_prompt, prompt_hash
+from .parsing import parse_mcq, parse_open, parse_structured_mcq
+from .prompts import MCQ_PROMPT_VARIANTS, mcq_prompt, open_prompt, prompt_hash
 
 
 def utc_now() -> str:
@@ -49,9 +49,11 @@ def select_rows(
     return rows
 
 
-def build_prompt(row: dict[str, Any], kind: str) -> str:
+def build_prompt(row: dict[str, Any], kind: str, prompt_variant: str = "direct") -> str:
     if kind == "mcq":
-        return mcq_prompt(row["question"], row["options"])
+        return mcq_prompt(row["question"], row["options"], variant=prompt_variant)
+    if prompt_variant != "direct":
+        raise ValueError("Open prompts currently support only the direct variant")
     return open_prompt(row["question"])
 
 
@@ -87,6 +89,7 @@ def main() -> None:
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--sample-id-file", type=Path)
+    parser.add_argument("--prompt-variant", choices=MCQ_PROMPT_VARIANTS, default="direct")
     parser.add_argument("--max-new-tokens", type=int)
     parser.add_argument("--sync-every", type=int, default=10)
     parser.add_argument("--resume", action="store_true")
@@ -107,6 +110,8 @@ def main() -> None:
     reject_reference_fields(rows)
     if any(row.get("kind") != args.kind for row in rows):
         raise ValueError("Manifest kind mismatch")
+    if args.kind != "mcq" and args.prompt_variant != "direct":
+        raise ValueError("Open prompts currently support only the direct variant")
     rows = select_rows(rows, args.limit, args.sample_id_file)
     if not rows:
         raise ValueError("No rows selected")
@@ -129,7 +134,7 @@ def main() -> None:
         "manifest_sha256": sha256_file(args.manifest),
         "model_path": str(args.model_path.resolve()),
         "model_source_manifest_sha256": sha256_file(args.model_source_manifest),
-        "prompt_sha256": prompt_hash(args.kind),
+        "prompt_sha256": prompt_hash(args.kind, args.prompt_variant),
         "max_new_tokens": max_new_tokens,
         "do_sample": False,
         "thinking_mode": False,
@@ -139,6 +144,10 @@ def main() -> None:
         "selected_count": len(selected_ids),
         "selected_sample_ids_sha256": selected_ids_sha256,
     }
+    # Preserve the historical B0 contract byte-for-byte. Only non-default variants
+    # add a new field, so an exact B0 resume remains possible.
+    if args.prompt_variant != "direct":
+        contract["prompt_variant"] = args.prompt_variant
     contract_sha = __import__("hashlib").sha256(
         json.dumps(contract, sort_keys=True).encode()
     ).hexdigest()
@@ -222,7 +231,7 @@ def main() -> None:
 
             with Image.open(image_path) as source:
                 image = source.convert("RGB")
-            prompt = build_prompt(row, args.kind)
+            prompt = build_prompt(row, args.kind, args.prompt_variant)
             messages = [
                 {
                     "role": "user",
@@ -251,7 +260,16 @@ def main() -> None:
             new_tokens = generated[:, input_tokens:]
             raw_output = processor.batch_decode(new_tokens, skip_special_tokens=True)[0]
             output_tokens = int(new_tokens.shape[1])
-            if args.kind == "mcq":
+            if args.kind == "mcq" and args.prompt_variant == "structured_evidence":
+                parsed_answer, observation, hypotheses, parse_status = parse_structured_mcq(
+                    raw_output
+                )
+                parsed = {
+                    "parsed_answer": parsed_answer,
+                    "parsed_observation": observation,
+                    "parsed_hypotheses": hypotheses,
+                }
+            elif args.kind == "mcq":
                 parsed_answer, parse_status = parse_mcq(raw_output)
                 parsed: dict[str, Any] = {"parsed_answer": parsed_answer}
             else:
