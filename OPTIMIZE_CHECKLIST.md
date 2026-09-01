@@ -8,7 +8,7 @@
 - primary optimize submode: `seed`
 - incumbent: `qwen35-4b-medcmr-b0`, verified MCQ accuracy `27.1690%`
 - promoted line: `B1 structured evidence`, prompt-only diagnostic with unchanged model/data/image preprocessing/decoding
-- active implementation candidate: `b1-structured-json-v1`
+- active implementation candidate: `b1-evidence-answer-v2`; this is the one allowed format repair after v1
 - full-eval queue: empty; Med-CMR test scoring is prohibited until the candidate and evaluation budget are frozen
 
 ## Control Checks
@@ -27,8 +27,11 @@
 - [x] Stagnation check performed: no optimization attempts yet
 - [x] Family-shift trigger checked: not active
 - [x] Fusion eligibility checked: false; no two successful lines exist
-- [ ] B1 implementation tests pass locally
-- [ ] B1 no-reference V100 smoke completes with frozen contract
+- [x] B1-v1 implementation tests pass in the remote project environment (`22 passed`)
+- [x] B1-v1 no-reference V100 smoke completes with frozen contract
+- [x] B1-v1 failure classified and archived: 8/14 strict schema; do not rerun unchanged
+- [ ] B1-v2 repair implementation tests pass
+- [ ] B1-v2 no-reference V100 smoke completes with frozen contract
 - [ ] Smoke schema/parse/latency/memory receipt recorded
 
 ## Smoke Queue
@@ -40,11 +43,11 @@
 
 ## Stop And Promotion Rules
 
-- Archive `b1-structured-json-v1` if it cannot reach at least 13/14 parseable outputs after one root-cause-confirmed format repair.
+- Archive the entire zero-shot B1 structured-output line if `b1-evidence-answer-v2` cannot reach at least 13/14 parseable outputs; no second format repair is allowed.
 - Do not inspect correctness or reference answers during the operational smoke.
 - Do not run a full Med-CMR B1 evaluation until an external, overlap-audited development set freezes the prompt and checkpoint-selection rules.
 - Promote B1 to development evaluation only if the smoke is operationally valid; smoke success alone is not evidence of accuracy gain.
 
 ## Next Concrete Action
 
-Implement `b1-structured-json-v1`, run local tests, then execute the bounded answer-blind V100 smoke.
+Implement the single `b1-evidence-answer-v2` repair, run tests, then execute its bounded answer-blind V100 smoke.
