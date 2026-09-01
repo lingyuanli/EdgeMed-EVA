@@ -40,6 +40,7 @@
 - [x] B1-v2 archived after -17.7734 point paired answer regression despite 512/512 strict JSON
 - [x] M1a two-step V100 backward/save smoke passed with finite gradients, applied optimizer steps, and hash-bound adapter
 - [x] M1a saved adapter reload gate passed with 4/4 completed predictions and zero invalid parses
+- [x] M1a pilot seed 20260901 improved frozen direct by +4.1016 points with paired bootstrap CI lower bound above zero
 
 ## Smoke Queue
 
@@ -57,4 +58,4 @@
 
 ## Next Concrete Action
 
-Run `scripts/run-pmc-t1a-pilot128.sh`. Promotion requires a completed hash-bound training run, finite/applied optimizer steps, a completed 512-row adapter evaluation, and a favorable paired comparison against the frozen untrained direct predictions before any Med-CMR test evaluation.
+Run two additional unchanged-budget pilot seeds with `EDGEMED_SEED=20260902` and `EDGEMED_SEED=20260903`. Require at least two of three seeds to improve over frozen direct, inspect the cross-seed mean/range, and keep Med-CMR test closed until that decision is recorded.

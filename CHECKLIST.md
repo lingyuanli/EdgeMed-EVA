@@ -58,5 +58,6 @@
 - [x] B1 answer line archived after significant -17.7734 point development regression
 - [x] single-V100 two-step T1a QLoRA backward/save smoke passed with finite/applied gradients and adapter hash
 - [x] saved T1a adapter reload/inference smoke passed (4/4 complete, zero invalid)
-- [ ] 128-step T1a pilot completed and paired against frozen direct development predictions
+- [x] 128-step T1a seed 20260901 completed: +4.1016 points, paired CI lower bound >0
+- [ ] T1a seeds 20260902/20260903 completed under the same frozen pilot contract family
 - [ ] golden validation annotation protocol frozen before model scoring
