@@ -15,7 +15,7 @@ from typing import Any
 from PIL import Image
 
 from .io import append_jsonl, read_jsonl, reject_reference_fields, sha256_file, write_json
-from .parsing import parse_mcq, parse_open, parse_structured_mcq
+from .parsing import parse_evidence_answer_mcq, parse_mcq, parse_open, parse_structured_mcq
 from .prompts import MCQ_PROMPT_VARIANTS, mcq_prompt, open_prompt, prompt_hash
 
 
@@ -260,7 +260,13 @@ def main() -> None:
             new_tokens = generated[:, input_tokens:]
             raw_output = processor.batch_decode(new_tokens, skip_special_tokens=True)[0]
             output_tokens = int(new_tokens.shape[1])
-            if args.kind == "mcq" and args.prompt_variant == "structured_evidence":
+            if args.kind == "mcq" and args.prompt_variant == "evidence_answer_v2":
+                parsed_answer, observation, parse_status = parse_evidence_answer_mcq(raw_output)
+                parsed = {
+                    "parsed_answer": parsed_answer,
+                    "parsed_observation": observation,
+                }
+            elif args.kind == "mcq" and args.prompt_variant == "structured_evidence":
                 parsed_answer, observation, hypotheses, parse_status = parse_structured_mcq(
                     raw_output
                 )

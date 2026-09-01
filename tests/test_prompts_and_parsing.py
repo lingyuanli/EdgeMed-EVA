@@ -1,4 +1,9 @@
-from edgemed_bench.parsing import parse_mcq, parse_open, parse_structured_mcq
+from edgemed_bench.parsing import (
+    parse_evidence_answer_mcq,
+    parse_mcq,
+    parse_open,
+    parse_structured_mcq,
+)
 from edgemed_bench.prompts import mcq_prompt, open_prompt, prompt_hash
 
 
@@ -36,6 +41,23 @@ def test_structured_mcq_prompt_is_answer_blind() -> None:
     assert prompt_hash("mcq", "structured_evidence") != prompt_hash("mcq")
 
 
+def test_evidence_answer_v2_prompt_is_minimal_and_answer_blind() -> None:
+    prompt = mcq_prompt(
+        "Question?",
+        {letter: f"Option {letter}" for letter in "ABCDE"},
+        variant="evidence_answer_v2",
+    )
+    assert '"observation"' in prompt
+    assert '"answer"' in prompt
+    assert '"hypotheses"' not in prompt
+    assert "ground truth" not in prompt.lower()
+    assert "visual_description" not in prompt
+    assert prompt_hash("mcq", "evidence_answer_v2") not in {
+        prompt_hash("mcq"),
+        prompt_hash("mcq", "structured_evidence"),
+    }
+
+
 def test_mcq_parser_is_conservative() -> None:
     assert parse_mcq("A") == ("A", "exact_letter")
     assert parse_mcq("Answer: (c)") == ("C", "answer_marker")
@@ -56,6 +78,20 @@ def test_structured_mcq_parser_accepts_only_bound_schema() -> None:
     assert parse_structured_mcq(
         '{"observation":"Focal opacity","hypotheses":["B"],"answer":"D"}'
     ) == (None, None, None, "invalid_structured_schema")
+
+
+def test_evidence_answer_v2_parser_is_strict_and_does_not_repair() -> None:
+    assert parse_evidence_answer_mcq(
+        '{"observation":"Focal opacity","answer":"D"}'
+    ) == ("D", "Focal opacity", "evidence_answer_json")
+    assert parse_evidence_answer_mcq("D") == (
+        None,
+        None,
+        "invalid_evidence_answer_json",
+    )
+    assert parse_evidence_answer_mcq(
+        '{"observation":"Focal opacity","answer":"D","hypotheses":["D"]}'
+    ) == (None, None, "invalid_evidence_answer_schema")
     assert parse_structured_mcq(
         '{"observation":"Focal opacity","hypotheses":["B"],"answer":"B","extra":1}'
     ) == (None, None, None, "invalid_structured_schema")

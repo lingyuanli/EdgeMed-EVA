@@ -56,6 +56,24 @@ def parse_structured_mcq(
     return answer, observation.strip(), hypotheses, "structured_json"
 
 
+def parse_evidence_answer_mcq(text: str) -> tuple[str | None, str | None, str]:
+    """Parse the minimal B1-v2 evidence/answer JSON without repair."""
+
+    try:
+        value = json.loads(text.strip())
+    except (json.JSONDecodeError, TypeError):
+        return None, None, "invalid_evidence_answer_json"
+    if not isinstance(value, dict) or set(value) != {"observation", "answer"}:
+        return None, None, "invalid_evidence_answer_schema"
+    observation = value["observation"]
+    answer = value["answer"]
+    if not isinstance(observation, str) or not observation.strip():
+        return None, None, "invalid_evidence_answer_schema"
+    if not isinstance(answer, str) or answer not in "ABCDE":
+        return None, None, "invalid_evidence_answer_schema"
+    return answer, observation.strip(), "evidence_answer_json"
+
+
 def parse_open(text: str) -> tuple[str | None, str | None, str]:
     reasoning_match = OPEN_REASONING.search(text)
     answer_match = OPEN_ANSWER.search(text)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 
 
-MCQ_PROMPT_VARIANTS = ("direct", "structured_evidence")
+MCQ_PROMPT_VARIANTS = ("direct", "structured_evidence", "evidence_answer_v2")
 
 
 def mcq_prompt(
@@ -29,6 +29,14 @@ def mcq_prompt(
             "The observation must state only a visible finding relevant to the question. "
             "Hypotheses must contain 1–3 distinct option letters (A–E), including the final "
             "answer. Do not provide hidden chain-of-thought; provide only this short evidence summary."
+        )
+    if variant == "evidence_answer_v2":
+        return stem + (
+            "Return exactly one compact JSON object with no markdown or extra text:\n"
+            '{"observation":"visible finding in 20 words or fewer","answer":"A"}\n'
+            "Use exactly these two keys. The observation must be one concise, image-grounded "
+            "visible finding of no more than 20 words. The answer must be one option letter A–E. "
+            "Do not add explanations, hypotheses, reasoning, citations, or additional keys."
         )
     raise ValueError(f"Unknown MCQ prompt variant: {variant}")
 
