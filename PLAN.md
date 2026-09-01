@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-01
-当前主阶段：`M1a three-seed pilot passed / 512-step budget study next`
+当前主阶段：`M1a seed3/128 frozen / best-SFT Med-CMR launch next`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -64,7 +64,7 @@
 ## 5. Checklist Link
 
 - checklist path：`CHECKLIST.md`。
-- next item：固定最佳 seed 20260903，仅将训练预算从 128 增至 512 steps，完成同一 512-row paired dev gate。
+- next item：以冻结的 seed3/128 adapter 启动一次 best-SFT Med-CMR 16,655 MCQ milestone evaluation。
 
 ## 6. Revision Log
 
@@ -87,6 +87,7 @@
 | 2026-09-01 | 单张 V100 完成 T1a QLoRA 两步 backward/save smoke | 默认/128 loss scale 产生非有限梯度；scale=1 且硬跳步门下两步 finite/applied，峰值 6,775 MiB，adapter 哈希可复现 | 证明 32GB V100 可承载 answer-only QLoRA；只晋级 adapter reload/pilot，不宣称训练收益 |
 | 2026-09-01 | M1a 128-step pilot seed 20260901 完成成对开发评测 | 61.7188% vs direct 57.6172%；delta +4.1016，bootstrap CI `[0.3906,8.0078]`，McNemar `p=0.0439` | 单 seed 通过但显著性临界；不触碰 Med-CMR test，追加两个冻结 seed |
 | 2026-09-01 | M1a 128-step pilot 三 seed 全部完成 | 三 seed 61.7188/63.8672/66.0156%，相对 direct 均为正且各自 paired CI 下界 >0；平均提升 +6.25 点 | M1a 通过跨 seed pilot 门；继续单变量训练预算研究，Med-CMR test 仍关闭 |
+| 2026-09-01 | seed3 512-step 嵌套预算研究完成 | 65.2344%，相对 direct +7.6172 点；但相对 seed3/128 为 -0.7813，CI 跨零、p=0.72 | 保留 seed3/128（66.0156%）为冻结最佳 SFT checkpoint；允许一次正式 Med-CMR MCQ milestone evaluation |
 
 ## 7. External Development Gate Contract
 
@@ -103,4 +104,5 @@
 - completed comparison: direct 295/512 (57.6172%); B1 204/512 (39.8438%); paired delta -17.7734 points with 95% bootstrap interval `[-22.8516,-12.5000]`.
 - adapter reload gate: 4/4 completed, zero invalid parse; 3/4 accuracy is operational-only and not an efficacy claim.
 - three-seed result: mean 63.8672%, mean +6.25 points; 3/3 positive and 3/3 paired-CI lower bounds above zero.
-- next execution: `EDGEMED_MAX_STEPS=512 EDGEMED_SEED=20260903 scripts/run-pmc-t1a-pilot128.sh`; retain seed3/128 as incumbent until paired result proves otherwise.
+- frozen checkpoint: seed 20260903 / 128 steps; adapter SHA-256 `874233467cae2428524a5184d702667e71ab2e6c49bccc41712fd58b87b9c64c`.
+- next execution: `scripts/run-medcmr-m1a-mcq-full.sh` in tmux; this consumes the single best-SFT Med-CMR MCQ evaluation budget only if the run completes.

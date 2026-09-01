@@ -60,5 +60,7 @@
 - [x] saved T1a adapter reload/inference smoke passed (4/4 complete, zero invalid)
 - [x] 128-step T1a seed 20260901 completed: +4.1016 points, paired CI lower bound >0
 - [x] T1a seeds 20260902/20260903 completed; 3/3 directions and CI lower bounds positive
-- [ ] seed 20260903 512-step nested budget study completed and compared with 128-step incumbent
+- [x] seed 20260903 512-step study completed; 128-step incumbent retained
+- [x] best-SFT checkpoint frozen before Med-CMR access (seed3/128, hash-bound)
+- [ ] best-SFT full Med-CMR MCQ milestone run completed and independently scored
 - [ ] golden validation annotation protocol frozen before model scoring

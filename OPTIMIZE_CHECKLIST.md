@@ -42,6 +42,7 @@
 - [x] M1a saved adapter reload gate passed with 4/4 completed predictions and zero invalid parses
 - [x] M1a pilot seed 20260901 improved frozen direct by +4.1016 points with paired bootstrap CI lower bound above zero
 - [x] M1a pilot seeds 20260902/20260903 completed; 3/3 positive and 3/3 paired-CI lower bounds above zero
+- [x] 512-step nested budget study completed; seed3/128 retained and hash-frozen
 
 ## Smoke Queue
 
@@ -59,4 +60,4 @@
 
 ## Next Concrete Action
 
-Run the nested seed3 budget study with `EDGEMED_MAX_STEPS=512 EDGEMED_SEED=20260903 scripts/run-pmc-t1a-pilot128.sh`. Compare against both frozen direct and the seed3/128 incumbent. Do not open Med-CMR test unless the final checkpoint selection is frozen.
+Launch the single allowed best-SFT Med-CMR MCQ evaluation with `scripts/run-medcmr-m1a-mcq-full.sh`. Do not inspect per-sample correctness for further development; report only completed aggregate metrics and the paired comparison with frozen B0.
