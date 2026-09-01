@@ -12,7 +12,14 @@
 - prompt: unchanged B0 direct MCQ prompt
 - inference runtime: unchanged B0 NF4/FP16/eager deterministic runner
 - evaluation budget: one frozen-best-SFT full Med-CMR MCQ run
-- state: `frozen / launch pending`
+- state: `running`
+- remote run directory: `/home/ubuntu/EdgeMed-EVA/runs/qwen35-4b-medcmr-m1a-sft128-s20260903-mcq-full-20260901`
+- tmux session: `medcmr-m1a-full`
+- code commit: `f5f00837d3b413b3ebcf53aff730e68cd7ccf618`
+- run contract SHA-256: `1dc588abbc18855eb3d99fa8df2b375195ad86b18c4b8fe21c434d65206f93b4`
+- launch evidence: predictions increased through 16 rows while the Python GPU
+  process held approximately 4.24 GiB; process exit remains pending.
+- expected count: 16,655; no aggregate metric is read before completion.
 
 The full run may expose aggregate Med-CMR metrics only after all 16,655
 predictions complete. Per-sample test correctness is not used for further

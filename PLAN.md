@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-01
-当前主阶段：`M1a seed3/128 frozen / best-SFT Med-CMR launch next`
+当前主阶段：`M1a best-SFT Med-CMR full MCQ running`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -64,7 +64,7 @@
 ## 5. Checklist Link
 
 - checklist path：`CHECKLIST.md`。
-- next item：以冻结的 seed3/128 adapter 启动一次 best-SFT Med-CMR 16,655 MCQ milestone evaluation。
+- next item：守护冻结的 best-SFT 16,655 MCQ run 至完整 exit；完成前不读取或报告中途准确率。
 
 ## 6. Revision Log
 
