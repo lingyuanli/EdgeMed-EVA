@@ -45,3 +45,13 @@
 - [x] canonical `baselines/local/qwen35-4b-medcmr-b0/json/metric_contract.json` written
 - [x] baseline artifact/report written
 - [x] next stage named explicitly
+
+## Optimization Data Gate
+
+- [x] B1-v2 answer-blind operational smoke passed
+- [x] external development manifest schema designed
+- [x] provenance/file/exact/near-overlap validator implemented
+- [x] validator unit/CLI tests pass in the project environment
+- [ ] external source dataset selected with acceptable license
+- [ ] real external manifest generated and gate report is `passed`
+- [ ] golden validation annotation protocol frozen before model scoring

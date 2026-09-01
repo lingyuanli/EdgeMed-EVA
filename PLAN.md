@@ -82,3 +82,11 @@
 | 2026-08-31 | 全量 MCQ 通过 tmux 启动，run contract `7de0a22e…`；首轮检查 predictions 从 47 增至 61，真实 Python/GPU/log 均移动 | 跨过仅有控制面状态的假运行边界 | 状态保持 `running`；完成前不报告正式准确率，收据见 baseline `execution.md` |
 | 2026-09-01 | 全量 MCQ 完成并经独立实现逐样本复算 | 16,655 个唯一样本完整覆盖，退出码 0，运行/来源/预测哈希一致 | MCQ 以 `verified_diverged` 收口：27.1690%（4,525/16,655）；Open 因 exact judge 不可用正式降级为 `operational_but_incomparable` |
 | 2026-09-01 | B1 v1/v2 在同一 14 样本 answer-blind smoke 上完成一次预注册格式修复 | v1 仅 8/14 严格 schema；v2 简化为短 observation + answer 后 14/14 严格 JSON，且未访问 references | B1-v2 仅获 operational promotion；准确率评测继续由外部 development 数据 gate 阻塞 |
+
+## 7. External Development Gate Contract
+
+- experiment tier: `auxiliary/dev`; no GPU and no benchmark scoring.
+- changed surface: external-data admission only; B0/B1 prompts, model, inference, and scorer remain frozen.
+- primary output: `edgemed-external-data-gate/v1` report with `status=passed`.
+- abandonment condition: license/provenance cannot be established, real files cannot be hash-bound, or overlap findings cannot be resolved without using Med-CMR labels.
+- next execution: validate unit fixtures, then survey and select one license-compatible external source before downloading or training.
