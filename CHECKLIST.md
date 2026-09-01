@@ -57,5 +57,6 @@
 - [x] direct-vs-B1 external development comparison completed with 512/512 paired predictions
 - [x] B1 answer line archived after significant -17.7734 point development regression
 - [x] single-V100 two-step T1a QLoRA backward/save smoke passed with finite/applied gradients and adapter hash
-- [ ] saved T1a adapter reload/inference smoke passed
+- [x] saved T1a adapter reload/inference smoke passed (4/4 complete, zero invalid)
+- [ ] 128-step T1a pilot completed and paired against frozen direct development predictions
 - [ ] golden validation annotation protocol frozen before model scoring

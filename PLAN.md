@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-01
-当前主阶段：`M1a backward smoke passed / adapter reload next`
+当前主阶段：`M1a adapter reload passed / 128-step pilot next`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -64,7 +64,7 @@
 ## 5. Checklist Link
 
 - checklist path：`CHECKLIST.md`。
-- next item：重载已保存的 M1a adapter 做 bounded inference smoke，然后冻结小规模 pilot 配置；B1-v2 已因外部 development 显著回退归档。
+- next item：运行冻结的 128-step M1a pilot，并在同一 512 条 PMC-VQA dev 上与未训练 direct 成对比较。
 
 ## 6. Revision Log
 
@@ -99,4 +99,5 @@
 - admitted training seed: 1,968 PMC-VQA v2 rows; 32 unresolved dHash candidates remain visible but quarantined.
 - admitted primary development: 512 PMC-VQA v2 MCQs, article/image/question-disjoint from the train seed and zero confirmed Med-CMR overlap.
 - completed comparison: direct 295/512 (57.6172%); B1 204/512 (39.8438%); paired delta -17.7734 points with 95% bootstrap interval `[-22.8516,-12.5000]`.
-- next execution: reload the hash-bound T1a adapter for bounded inference, then freeze a small pilot; B1 is not its parent objective.
+- adapter reload gate: 4/4 completed, zero invalid parse; 3/4 accuracy is operational-only and not an efficacy claim.
+- next execution: `scripts/run-pmc-t1a-pilot128.sh`; train 128 optimizer steps, then full 512-row paired development evaluation.

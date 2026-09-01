@@ -56,3 +56,9 @@ fit, and adapter serialization on one 32GB V100. It does not prove generalizing
 accuracy or full-epoch stability. Next, reload this adapter for a bounded
 inference smoke, then run a versioned pilot and compare it against the frozen
 direct PMC-VQA development predictions before any Med-CMR test use.
+
+The subsequent reload gate completed 4/4 deterministic direct-prompt
+predictions with zero invalid parses and a completed hash-bound run manifest.
+Its 3/4 accuracy is not used as an efficacy result because the sample is only
+an operational slice. Adapter load compatibility is therefore passed; the next
+efficacy gate is the frozen 128-step pilot on all 512 development examples.
