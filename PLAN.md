@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-01
-当前主阶段：`B1 smoke verified / external source frozen / manifest build`
+当前主阶段：`external data admitted / B0-vs-B1 dev comparison running`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -94,4 +94,6 @@
 - frozen primary MCQ development source: 512 deterministic records from PMC-VQA v2 official test; frozen inspection found zero image and PMCID overlap with its train source.
 - frozen cross-dataset source: SLAKE official validation at HF revision `a9083ce6c34ac3ffb17671a605962924d8a8f9e9`; English records only and never used for training.
 - deferred source: MS-CXR/VinDr-CXR evidence boxes require credentialed PhysioNet access and do not block cycle 1.
-- next execution: implement deterministic source builders, download named hash-bound files, generate real manifests, and run the overlap gate before any training.
+- admitted training seed: 1,968 PMC-VQA v2 rows; 32 unresolved dHash candidates remain visible but quarantined.
+- admitted primary development: 512 PMC-VQA v2 MCQs, article/image/question-disjoint from the train seed and zero confirmed Med-CMR overlap.
+- next execution: finish the active direct-vs-B1 development comparison, then run the frozen 2-step T1a QLoRA backward smoke on the single V100.

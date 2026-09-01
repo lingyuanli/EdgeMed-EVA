@@ -35,6 +35,7 @@
 - [x] Smoke schema/parse/latency/memory receipt recorded
 - [x] PMC-VQA v2 training seed and SLAKE validation sources frozen by immutable revision
 - [x] SLAKE English validation manifest admitted: 1,053 rows, 96 images, zero confirmed Med-CMR overlap
+- [x] PMC-VQA train/dev admitted: 1,968 train, 32 quarantined, 512 disjoint MCQ dev, zero confirmed Med-CMR overlap
 
 ## Smoke Queue
 

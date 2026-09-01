@@ -53,5 +53,5 @@
 - [x] provenance/file/exact/near-overlap validator implemented
 - [x] validator unit/CLI tests pass in the project environment
 - [x] external source datasets selected and immutable revisions/license boundaries recorded
-- [ ] real external manifest generated and gate report is `passed`
+- [x] real external manifests generated: SLAKE 1,053; PMC dev 512; PMC train 1,968 accepted + 32 quarantined; all final gates `passed`
 - [ ] golden validation annotation protocol frozen before model scoring
