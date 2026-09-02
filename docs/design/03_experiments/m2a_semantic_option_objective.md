@@ -1,6 +1,6 @@
 # M2a Semantic Option-Content Objective
 
-Status: `implementation / smoke next`  
+Status: `smoke passed / 128-step pilot ready`
 Parent: B0 model and M1a training recipe, not M1a weights
 
 ## Confirmed cause addressed
@@ -29,3 +29,12 @@ At inference, `semantic_option` asks for the complete text of one visible option
 
 Failure at gates 2–4 archives plain semantic targets and promotes deterministic order augmentation as a separately preregistered variable. No result authorizes Med-CMR access.
 
+## Smoke receipt
+
+- exit code: 0
+- optimizer steps: 2/2 applied
+- loss: finite; first `0.677792`, last `0.125183`
+- peak CUDA memory: `6903.48 MiB`
+- adapter model SHA-256: `945cf789f831d179f1e628d556858291d769358698c71e85a83349e85ce30bf2`
+- reload inference: 4/4 completed, all `option_text_match`
+- code commit: `7705ee6b0cbe2cefc06a79cc6a81d9c245e4b020`

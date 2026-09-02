@@ -60,7 +60,9 @@
 - [x] scorer `None -> None` overcount fixed by commit `3f95b2a`; buggy file preserved and GPU outputs unchanged
 - [x] H2 answer-letter/order sensitivity supported; single-letter SFT family stopped
 - [x] M2a semantic option prompt, target, unique-content parser, and two-step smoke script implemented
-- [ ] M2a two-step finite/save/reload smoke passed on V100
+- [x] M2a two-step finite/save/reload smoke passed on V100; 2 applied steps, finite loss, 4/4 option-text reload parses
+- [x] M2a seed3/128 pilot and original/rotated same-prompt B0 control script frozen
+- [ ] M2a seed3/128 original/rotated pilot completed
 
 ## Smoke Queue
 
