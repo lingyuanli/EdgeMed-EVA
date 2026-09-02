@@ -78,10 +78,13 @@ def main() -> None:
     task_correct: Counter[str] = Counter()
     parse_statuses: Counter[str] = Counter()
     correct_total = 0
+    invalid_total = 0
     for sample_id, prediction in by_sample.items():
         task = tasks[sample_id]
         task_totals[task] += 1
         parse_statuses[str(prediction.get("parse_status"))] += 1
+        if prediction.get("parsed_answer") is None:
+            invalid_total += 1
         is_correct = prediction.get("parsed_answer") == answers[sample_id]
         if is_correct:
             correct_total += 1
@@ -95,10 +98,10 @@ def main() -> None:
         "missing": len(missing),
         "overall": metric(correct_total, len(by_sample)),
         "invalid_parse": {
-            "count": parse_statuses["invalid"],
+            "count": invalid_total,
             "total": len(by_sample),
-            "rate": parse_statuses["invalid"] / len(by_sample) if by_sample else None,
-            "rate_percent": 100 * parse_statuses["invalid"] / len(by_sample) if by_sample else None,
+            "rate": invalid_total / len(by_sample) if by_sample else None,
+            "rate_percent": 100 * invalid_total / len(by_sample) if by_sample else None,
             "direction": "lower_is_better",
         },
         "by_task": {

@@ -49,7 +49,11 @@ def test_cli_reports_accuracy_tasks_and_invalid_parse(
         predictions,
         [
             {"sample_id": "mcq-1", "parsed_answer": "A", "parse_status": "exact_letter"},
-            {"sample_id": "mcq-2", "parsed_answer": None, "parse_status": "invalid"},
+            {
+                "sample_id": "mcq-2",
+                "parsed_answer": None,
+                "parse_status": "invalid_option_text",
+            },
         ],
     )
     monkeypatch.setattr(
