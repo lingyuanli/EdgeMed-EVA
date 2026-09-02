@@ -72,6 +72,7 @@
 - [x] M2a withheld from SLAKE and Med-CMR; no per-sample tuning or extra M2a seed authorized
 - [x] M2b deterministic training-only option-order augmentation implemented and audited; selected A/B/C/D positions are 66/71/58/61
 - [x] M2b two-step V100 smoke passed: finite loss, 2/2 applied steps, saved adapter, 4/4 reload parses, peak 6903.48 MiB
+- [x] M2b seed3/128 pilot launched in persistent remote tmux from commit `30ec7e0`; frozen B0 outputs reused after hash checks
 - [ ] M2b seed3/128 original/rotated pilot completed
 
 ## Smoke Queue

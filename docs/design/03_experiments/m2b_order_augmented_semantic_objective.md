@@ -1,6 +1,6 @@
 # M2b Deterministic Order-Augmented Semantic Objective
 
-Status: `surface gate and V100 smoke passed / 128-step pilot not yet launched`
+Status: `surface gate and V100 smoke passed / 128-step pilot running`
 
 Parent: M2a recipe, initialized again from the frozen B0 model
 
@@ -49,3 +49,5 @@ The V100 smoke exited zero with 2/2 optimizer steps applied, finite loss (first 
 | smoke adapter model | `5fb64ab76cf02394f611770219d781babc148e2d25f100f3505e9f22b551da4a` |
 | reload run manifest | `81bb989a59724d1566ae56b451798562eb93b4fcc22e1e9b28f415e0b0ed23cf` |
 | reload predictions | `75a1d00f6ff1205bdaeeeceab9bc10ce77a024f68fafed9307fa325803b1f15f` |
+
+The single 128-step pilot was launched in remote tmux session `m2b-orderaug-pilot128` from code commit `30ec7e0e3f6f5a013f8a7b9a0c757f73dc411577`. The launch preflight matched the frozen B0 original/rotate-1 prediction hashes and all four development-surface hashes; no B0 inference is repeated.
