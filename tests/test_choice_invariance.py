@@ -49,3 +49,14 @@ def test_paired_invariance_comparison() -> None:
     assert result["consistency_a_percent"] == 0.0
     assert result["consistency_b_percent"] == 100.0
     assert result["delta_consistency_points"] == 100.0
+
+
+def test_paired_invariance_does_not_count_none_to_none() -> None:
+    manifest = [{"sample_id": "1", "option_rotation": {"old_to_new": {"A": "B"}}}]
+    missing = [{"sample_id": "1", "parsed_answer": None}]
+    result = compare_invariance(
+        manifest, missing, missing, missing, missing, repetitions=10, seed=1
+    )
+    assert result["consistency_a_percent"] == 0.0
+    assert result["consistency_b_percent"] == 0.0
+    assert result["contingency"]["neither_consistent"] == 1

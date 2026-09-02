@@ -41,8 +41,16 @@ def compare_invariance(
     differences: list[int] = []
     for sample_id in sorted(rotations):
         mapping = rotations[sample_id].get("option_rotation", {}).get("old_to_new", {})
-        consistent_a = mapping.get(inputs["original A"][sample_id].get("parsed_answer")) == inputs["rotated A"][sample_id].get("parsed_answer")
-        consistent_b = mapping.get(inputs["original B"][sample_id].get("parsed_answer")) == inputs["rotated B"][sample_id].get("parsed_answer")
+        expected_a = mapping.get(inputs["original A"][sample_id].get("parsed_answer"))
+        expected_b = mapping.get(inputs["original B"][sample_id].get("parsed_answer"))
+        consistent_a = (
+            expected_a is not None
+            and inputs["rotated A"][sample_id].get("parsed_answer") == expected_a
+        )
+        consistent_b = (
+            expected_b is not None
+            and inputs["rotated B"][sample_id].get("parsed_answer") == expected_b
+        )
         differences.append(int(consistent_b) - int(consistent_a))
         if consistent_a and consistent_b:
             both += 1
