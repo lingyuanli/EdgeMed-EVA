@@ -48,7 +48,8 @@
 - [x] SLAKE proxy scorer/paired comparison implemented with answer-type/content/modality slices
 - [x] deterministic answer-preserving option rotation and content-consistency scorer implemented
 - [x] SLAKE direct-reasoning 64-token full launch stopped at 51 rows after answer-blind parse preflight failed (46 invalid); failed artifact preserved
-- [ ] SLAKE answer-only 32-row operational smoke passes at least 31/32 parseable outputs
+- [x] bounded direct-reasoning 128-token smoke failed operational gate at 29/32 parseable; artifact preserved
+- [ ] SLAKE answer-only B0 and M1a 32-row operational smokes each pass at least 31/32 parseable outputs
 - [ ] SLAKE B0-vs-M1a retention slice completed and hash-bound
 - [ ] PMC answer-preserving option-rotation diagnostic completed
 

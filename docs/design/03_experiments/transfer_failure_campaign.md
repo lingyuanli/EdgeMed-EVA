@@ -28,7 +28,7 @@ These are candidate explanations, not conclusions. Aggregate Med-CMR results alo
 - Comparison: frozen B0 versus frozen M1a seed3/128 under the identical answer-only external-retention prompt, image budget, deterministic decoding, and conservative `Answer:` parser. This prompt is frozen before reference scoring and is not the Med-CMR official open prompt.
 - Metrics: normalized exact, token F1, parse status, and predeclared `answer_type`, `base_type`, `content_type`, and `modality` slices.
 - Metric label: external retention proxy only; it is not the unavailable official Med-CMR open judge.
-- Operational gate: a 32-row answer-blind smoke must produce at least 31 parseable `Answer:` records within 32 tokens. The earlier direct-reasoning prompt at 64 tokens was stopped after 51 rows because 46 were truncated before `Answer:`; its directory and prediction hash remain preserved as a failed preflight, not an efficacy result.
+- Operational gate: B0 and M1a must each produce at least 31/32 parseable `Answer:` records within 32 tokens on the same answer-blind smoke. The earlier direct-reasoning prompt at 64 tokens was stopped after 51 rows because 46 were truncated before `Answer:`; a bounded 128-token retry reached only 29/32. Both directories and prediction hashes remain preserved as failed preflights, not efficacy results.
 - Promotion gate: the 95% paired interval lower bound must be at least `-1.0` point for both exact and token F1. Any interval wholly below `-1.0` archives M1a as a general-retention parent.
 
 ### Slice B — answer-label invariance (diagnostic)

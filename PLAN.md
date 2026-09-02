@@ -91,6 +91,7 @@
 | 2026-09-02 | 冻结 seed3/128 完成 16,655 条 Med-CMR MCQ | M1a 24.3591% vs B0 27.1690%，paired delta -2.8100，95% CI `[-3.3443,-2.2696]`，七维全部回退；但 invalid 从 773 降至 0 | M1a 正式归档为迁移失败；不得按 test 逐样本调优或重复 M1a test，转向 source-diverse transfer gate 与新机制 |
 | 2026-09-02 | 预注册 transfer-failure campaign 与 SLAKE proxy scorer | PMC dev 与训练同属 caption-derived 四选一生成族，无法证明跨源迁移；aggregate Med-CMR 结果不能定位因果 | 先做 1,053 条 SLAKE B0-vs-M1a 保留评测，再做 PMC 选项旋转；不重新访问 Med-CMR |
 | 2026-09-02 | SLAKE direct-reasoning 64-token full launch 在 51 条后停止 | answer-blind operational audit 仅 5/51 形成可解析 `Answer:`，其余在推理段截断；继续会把截断混入语义保留 | 保留失败产物与哈希；冻结 answer-only proxy prompt，先过 32 条 ≥31 parseable smoke 后再重启 full slice |
+| 2026-09-02 | SLAKE direct-reasoning 128-token bounded retry 为 29/32 parseable | 三条仍耗尽 128 token；该 prompt 同时测量冗长程度与语义，不适合作为低成本 retention gate | 不再增加 reasoning token；对 B0/M1a 均执行 answer-only 32-token operational smoke |
 
 ## 7. External Development Gate Contract
 
