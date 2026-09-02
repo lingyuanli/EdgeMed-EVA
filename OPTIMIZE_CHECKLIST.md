@@ -76,7 +76,10 @@
 - [x] M2b seed3/128 original/rotated pilot completed with 512/512 each and exit code zero
 - [x] M2b archived: consistency +8.5938 with wholly positive CI, but original -1.1719 and rotated -3.1250 fail accuracy gates
 - [x] semantic MCQ invalid aggregation repaired in commit `a5ddf38`; old metrics preserved, predictions/accuracy/pairs unchanged
-- [ ] A1 semantic order-consensus Agent preregistered and implemented
+- [x] A1 semantic order-consensus Agent preregistered, implemented, and covered by order-invariance/ambiguity tests
+- [x] A1 shift-2/shift-3 answer-blind smokes passed 8/8 and 8/8, all option-text parseable
+- [x] A1 full missing-view campaign launched in remote tmux from commit `9699b67`
+- [ ] A1 full four-view consensus and frozen PMC gate completed
 
 ## Smoke Queue
 

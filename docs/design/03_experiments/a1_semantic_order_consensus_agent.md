@@ -1,6 +1,6 @@
 # A1 Semantic Option-Order Consensus Agent
 
-Status: `preregistered / implementation preflight`
+Status: `operational smoke passed / full shift-2 running`
 
 Parent weights: frozen M2a seed-20260903 adapter
 
@@ -31,3 +31,7 @@ Ties are resolved by SHA-256 of normalized option content, never by option lette
 5. If the PMC gate passes, admit a separate source-diverse MCQ retention set before any Med-CMR milestone. SLAKE is open-answer and cannot validate this MCQ-only controller.
 
 Failure archives A1. The four-view cost must be reported alongside accuracy; a successful accuracy result is not an edge-efficiency result until a two-view or early-stop policy is evaluated under a separately frozen compute/quality frontier.
+
+## Live execution receipt
+
+The shift-2 and shift-3 operational smokes each completed 8/8 with 8/8 `option_text_match` outputs. Correctness was not inspected. The full shift-2 run then launched automatically in remote tmux session `a1-semantic-consensus` from code commit `9699b67056ed56a1df2ec65b13d22cf8b98a92ce`; its first verified checkpoint contained 45/512 durable predictions. The full gate remains pending.

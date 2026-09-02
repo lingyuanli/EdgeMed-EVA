@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-02
-当前主阶段：`A1 semantic option-order consensus Agent design`
+当前主阶段：`A1 semantic option-order consensus Agent full missing-view evaluation running`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -100,6 +100,7 @@
 | 2026-09-02 | M2b training-only order surface 与 V100 smoke 通过 | 256 条冻结训练选择的答案位置为 `66/71/58/61`；2/2 optimizer steps applied，finite loss，4/4 reload parse，峰值 6,903 MiB | 允许启动一次 seed3/128 M2b pilot；不重跑 B0，不进入 SLAKE/Med-CMR |
 | 2026-09-02 | M2b seed3/128 完成并归档 | consistency `+8.5938`，CI `[3.9063,13.4766]`；但原序 `-1.1719`、轮换 `-3.1250`，准确率门均失败 | 不搜索 M2b seed，不进入 SLAKE/Med-CMR；冻结更准确的 M2a 权重并切换到 A1 multi-view Agent family |
 | 2026-09-02 | 修复 semantic MCQ invalid 聚合 | scorer 只识别字面量 `invalid`，漏计 `invalid_option_text`；正确率一直按 `parsed_answer=None` 计错 | commit `a5ddf38` 按空解析计 invalid；保留旧 metrics，重算只改变 invalid 字段与文件哈希 |
+| 2026-09-02 | A1 四视图 semantic consensus Agent 启动 | controller 通过 65 tests；shift-2/shift-3 smoke 均 8/8 completed/parseable，且不读取正确率 | 仅补跑缺失的两个 512 views；复用 hash-frozen M2a original/rotate-1，完成后才执行 conjunctive gate |
 
 ## 7. External Development Gate Contract
 
