@@ -1,6 +1,6 @@
 # M2a Semantic Option-Content Objective
 
-Status: `smoke passed / 128-step pilot ready`
+Status: `128-step training complete / parser-v2 evaluation running`
 Parent: B0 model and M1a training recipe, not M1a weights
 
 ## Confirmed cause addressed
@@ -17,6 +17,8 @@ The model, source rows, seed, order, image budget, QLoRA layers/rank/alpha/dropo
 At inference, `semantic_option` asks for the complete text of one visible option. The parser normalizes the generated string and visible option strings and accepts only a unique exact match. It maps that visible content back to a letter for the existing scorer. It never reads the reference answer.
 
 The B0 preflight additionally exposed `Answer: D) <exact option text>`. Parser v2 accepts this only when the stated label and following text identify the same visible option; a label alone or a mismatched label/text pair remains invalid. The partial parser-v1 run stopped after 66 rows and was preserved with predictions SHA-256 `bdaf1a0…68c20`. The completed 128-step adapter is reused; training is not repeated.
+
+Parser-v2 answer-blind smoke passed: B0 30/32 parseable (`30 option_label_text_match`, two label-only invalid), M2a 31/32 (`31 option_text_match`, one invalid). Prediction hashes are `9727212e…f2584` and `975c0efa…974f`. Full evaluation reuses the completed adapter with `EDGEMED_SKIP_TRAIN=1`.
 
 ## Gates
 
@@ -40,3 +42,5 @@ Failure at gates 2–4 archives plain semantic targets and promotes deterministi
 - adapter model SHA-256: `945cf789f831d179f1e628d556858291d769358698c71e85a83349e85ce30bf2`
 - reload inference: 4/4 completed, all `option_text_match`
 - code commit: `7705ee6b0cbe2cefc06a79cc6a81d9c245e4b020`
+
+The full 128-step training completed with finite mean loss `0.183526`, last loss `0.147254`, and peak CUDA allocation `8475.42 MiB`. Its evaluation was restarted under parser v2 without retraining.

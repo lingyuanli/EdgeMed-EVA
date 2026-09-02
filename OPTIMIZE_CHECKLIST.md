@@ -65,7 +65,8 @@
 - [x] M2a seed3/128 pilot launched in tmux from remote commit `66f89c3`
 - [x] M2a 128-step training completed finite; evaluation stopped at 66 B0 rows after answer-blind parser-v1 mismatch, partial artifact preserved
 - [x] parser-v2 requires label and copied content to agree; label-only remains invalid; retraining prohibited
-- [ ] M2a parser-v2 B0/M2a 32-row operational smoke passed
+- [x] M2a parser-v2 B0/M2a operational smoke passed at 30/32 and 31/32; label-only remains invalid
+- [x] completed 128-step adapter reused without retraining; parser-v2 four-run evaluation launched
 - [ ] M2a seed3/128 original/rotated pilot completed
 
 ## Smoke Queue
