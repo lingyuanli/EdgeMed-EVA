@@ -1,7 +1,9 @@
 # M2b Deterministic Order-Augmented Semantic Objective
 
-Status: `preregistered / implementation preflight`  
-Parent: M2a recipe, initialized again from the frozen B0 model  
+Status: `surface gate and V100 smoke passed / 128-step pilot not yet launched`
+
+Parent: M2a recipe, initialized again from the frozen B0 model
+
 Seed: `20260903`
 
 ## Why this is the next experiment
@@ -33,3 +35,17 @@ The transform does not touch evaluation data. It writes an answer-free inference
 5. Only if all PMC checks pass: run the already frozen SLAKE answer-only retention comparison.
 
 Failure archives M2b without changing its order seed or inspecting per-sample correctness. No M2a/M2b result authorizes Med-CMR access; a new milestone would require PMC plus SLAKE gates and a separately frozen test decision.
+
+## Surface and smoke receipt
+
+The frozen transformation produced 1,968 answer-preserving rows. The original answer-position counts `241/712/769/246` became `519/510/463/476`; all-row shift counts were `476/475/514/503`. The exact 256 training examples selected by the unchanged seed have A/B/C/D counts `66/71/58/61`, satisfying the preregistered 20%–30% bounds. Their ordered sample-ID list SHA-256 is `11380adbb4bd820e3c4d23d3ca6ad3ef7eb94d3787efa6ffa17d1b55316164e8`.
+
+The V100 smoke exited zero with 2/2 optimizer steps applied, finite loss (first `0.832290`, last `0.122301`, mean `0.484738`), peak CUDA allocation `6903.48 MiB`, a saved adapter, and 4/4 reload outputs parsed as `option_text_match`.
+
+| Artifact | SHA-256 |
+|---|---|
+| transformation report | `fa7d1b8482dea3884a65623607f060b569887db4c4a05f35a543ba37f87db8fa` |
+| smoke training manifest | `c7d40f5fda1daa24e3e4f2cb7f6442ffbe69c1fb09fc3077d13e1146e1c812ea` |
+| smoke adapter model | `5fb64ab76cf02394f611770219d781babc148e2d25f100f3505e9f22b551da4a` |
+| reload run manifest | `81bb989a59724d1566ae56b451798562eb93b4fcc22e1e9b28f415e0b0ed23cf` |
+| reload predictions | `75a1d00f6ff1205bdaeeeceab9bc10ce77a024f68fafed9307fa325803b1f15f` |

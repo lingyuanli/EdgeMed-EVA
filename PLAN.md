@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-02
-当前主阶段：`M2b deterministic training-only option-order augmentation design`
+当前主阶段：`M2b deterministic training-only option-order augmentation smoke passed`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -97,6 +97,7 @@
 | 2026-09-02 | SLAKE full retention 完成并显著正迁移 | exact `+8.6420`（CI `[6.6477,10.7312]`），token F1 `+5.5843`（CI `[3.8774,7.3331]`）；OPEN/CLOSED exact 均上升 | 一般语义遗忘 H3 被削弱；立即执行已冻结 PMC 选项旋转，继续检验 label/schema 敏感性 |
 | 2026-09-02 | PMC answer-preserving rotation 完成，H2 获支持 | M1a 内容一致性 63.2813% vs B0 71.8750%，paired delta `-8.5938`，CI `[-13.2813,-4.0967]`；旋转后准确率优势仅 +1.9531 且 CI 跨零 | 停止字母 token SFT；下一单变量候选为 option-content/semantic target，必须同时通过原序、旋转、SLAKE gate |
 | 2026-09-02 | M2a semantic option-content seed3/128 完成 | 原序 `+4.8828`、轮换 `+4.4922` 且 paired CI 均为正；一致性点估计 `+1.7578`，但 CI `[-3.1250,6.6406]` 未证明 -1 point non-inferiority | 严格 gate 记为未通过，不进入 SLAKE/Med-CMR；按预注册规则只增加 deterministic training-only order augmentation，形成 M2b |
+| 2026-09-02 | M2b training-only order surface 与 V100 smoke 通过 | 256 条冻结训练选择的答案位置为 `66/71/58/61`；2/2 optimizer steps applied，finite loss，4/4 reload parse，峰值 6,903 MiB | 允许启动一次 seed3/128 M2b pilot；不重跑 B0，不进入 SLAKE/Med-CMR |
 
 ## 7. External Development Gate Contract
 

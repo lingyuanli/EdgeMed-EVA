@@ -70,7 +70,9 @@
 - [x] M2a seed3/128 original/rotated pilot completed: original +4.8828 points and rotated +4.4922, both paired intervals wholly positive
 - [x] M2a strict promotion gate stopped at consistency non-inferiority: point delta +1.7578, but 95% CI lower bound -3.1250 is below the frozen -1 margin
 - [x] M2a withheld from SLAKE and Med-CMR; no per-sample tuning or extra M2a seed authorized
-- [ ] M2b deterministic training-only option-order augmentation implemented and audited
+- [x] M2b deterministic training-only option-order augmentation implemented and audited; selected A/B/C/D positions are 66/71/58/61
+- [x] M2b two-step V100 smoke passed: finite loss, 2/2 applied steps, saved adapter, 4/4 reload parses, peak 6903.48 MiB
+- [ ] M2b seed3/128 original/rotated pilot completed
 
 ## Smoke Queue
 
