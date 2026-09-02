@@ -31,6 +31,31 @@ class AgentRunResult:
     tool_traces: list[dict[str, Any]]
 
 
+def canonicalize_final_evidence(final: dict[str, Any]) -> list[dict[str, Any]]:
+    """Apply trace-independent structural invariants and return an audit log."""
+    normalizations: list[dict[str, Any]] = []
+    evidence = final.get("evidence")
+    if not isinstance(evidence, list):
+        return normalizations
+    for index, item in enumerate(evidence):
+        if not isinstance(item, dict):
+            continue
+        if (
+            item.get("acquisition") in {"inspect_overview", "temporal_skim"}
+            and item.get("region_xyxy_1000") is not None
+        ):
+            normalizations.append(
+                {
+                    "rule": "non_region_acquisition_requires_null_region",
+                    "evidence_index": index,
+                    "before": item["region_xyxy_1000"],
+                    "after": None,
+                }
+            )
+            item["region_xyxy_1000"] = None
+    return normalizations
+
+
 FINAL_SCHEMA = {
     "sample_id": "exact sample id from CASE",
     "hypotheses": [
@@ -140,9 +165,12 @@ def run_medical_agent(
     if not isinstance(final, dict):
         raise TypeError("Agent finalizer must return an object")
     final_model_call = final.pop("_model_call", None)
+    policy_normalizations = canonicalize_final_evidence(final)
     final_message = {"role": "assistant", "content": final, "phase": "final"}
     if isinstance(final_model_call, dict):
         final_message["model_call"] = final_model_call
+    if policy_normalizations:
+        final_message["policy_normalizations"] = policy_normalizations
     messages.append(final_message)
     prediction = {
         "schema_version": "edgemed-medical-agent-prediction/v1",
@@ -153,6 +181,8 @@ def run_medical_agent(
         "tool_trace_ids": [trace["trace_id"] for trace in executor.traces],
         "finish_reason": finish_reason,
     }
+    if policy_normalizations:
+        prediction["policy_normalizations"] = policy_normalizations
     trajectory = {
         "schema_version": "edgemed-medical-agent-trajectory/v1",
         "sample_id": sample["sample_id"],

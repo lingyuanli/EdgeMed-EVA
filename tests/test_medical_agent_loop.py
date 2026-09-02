@@ -79,6 +79,42 @@ def test_controller_forces_auditable_overview_when_backend_stops_before_evidence
     assert result.tool_traces[0]["tool_name"] == "inspect_overview"
 
 
+def test_controller_records_non_region_box_canonicalization(tmp_path: Path) -> None:
+    class OverviewBackend:
+        def decide(self, messages, tools):
+            if any(message["role"] == "tool" for message in messages):
+                return {"content": "ready", "tool_call": None}
+            return {
+                "content": "overview",
+                "tool_call": {"name": "inspect_overview", "arguments": {"sample_count": 1}},
+            }
+
+        def finalize(self, messages, output_schema):
+            return {
+                "sample_id": "s1",
+                "evidence": [{
+                    "evidence_id": "E1",
+                    "acquisition": "inspect_overview",
+                    "region_xyxy_1000": [0, 0, 1000, 1000],
+                }],
+                "answer": "A",
+            }
+
+    result = run_medical_agent(
+        _sample(tmp_path), OverviewBackend(), tmp_path, tmp_path / "artifacts",
+        allowed_tools=("inspect_overview",), max_steps=2,
+    )
+    assert result.prediction["agent_output"]["evidence"][0]["region_xyxy_1000"] is None
+    assert result.prediction["policy_normalizations"] == [{
+        "rule": "non_region_acquisition_requires_null_region",
+        "evidence_index": 0,
+        "before": [0, 0, 1000, 1000],
+        "after": None,
+    }]
+    final_message = result.trajectory["messages"][-1]
+    assert final_message["policy_normalizations"] == result.prediction["policy_normalizations"]
+
+
 def test_inference_row_rejects_reference_fields(tmp_path: Path) -> None:
     sample = _sample(tmp_path)
     sample["answer"] = "A"
