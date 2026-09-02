@@ -180,10 +180,13 @@ def run_agent_batch(
     events_path = run_dir / "events.jsonl"
     checkpoint_dir = run_dir / "sample_checkpoints"
     contract_sha256 = _canonical_hash(contract)
+    current_code_commit = git_commit()
     if manifest_path.exists() and not resume:
         raise FileExistsError(f"Run already exists; pass resume=True: {run_dir}")
     if manifest_path.exists():
         previous = json.loads(manifest_path.read_text())
+        if previous.get("code_commit") != current_code_commit:
+            raise RuntimeError("Resume code commit differs from existing run")
         if previous.get("contract_sha256") != contract_sha256:
             raise RuntimeError("Resume contract differs from existing run")
         if not inference_path.is_file() or sha256_file(inference_path) != previous["source_hashes"]["inference_manifest_sha256"]:
@@ -200,7 +203,7 @@ def run_agent_batch(
         "scientific_result": False,
         "started_at": previous.get("started_at", utc_now()),
         "resume_count": int(previous.get("resume_count", 0)) + int(bool(previous)),
-        "code_commit": git_commit(),
+        "code_commit": current_code_commit,
         "contract": contract,
         "contract_sha256": contract_sha256,
         "quality_gates": {

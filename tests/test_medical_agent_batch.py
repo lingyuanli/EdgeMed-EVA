@@ -1,4 +1,5 @@
 import json
+import importlib
 from pathlib import Path
 
 import pytest
@@ -130,6 +131,26 @@ def test_batch_resume_rejects_contract_change(tmp_path: Path) -> None:
             rows, FakeBackend(), data_root=tmp_path, run_dir=run_dir,
             contract={**_contract(), "max_steps": 3},
             allowed_tools=("inspect_overview",), max_steps=3, resume=True,
+        )
+
+
+def test_batch_resume_rejects_code_commit_change(tmp_path: Path, monkeypatch) -> None:
+    runner = importlib.import_module("edgemed_bench.run_medical_agent")
+    rows = _rows(tmp_path)
+    run_dir = tmp_path / "run"
+    monkeypatch.setattr(runner, "git_commit", lambda: "commit-a")
+    with pytest.raises(InterruptedError):
+        run_agent_batch(
+            rows, FakeBackend(), data_root=tmp_path, run_dir=run_dir,
+            contract=_contract(), allowed_tools=("inspect_overview",), max_steps=2,
+            interrupt_after=1,
+        )
+    monkeypatch.setattr(runner, "git_commit", lambda: "commit-b")
+    with pytest.raises(RuntimeError, match="code commit differs"):
+        run_agent_batch(
+            rows, FakeBackend(), data_root=tmp_path, run_dir=run_dir,
+            contract=_contract(), allowed_tools=("inspect_overview",), max_steps=2,
+            resume=True,
         )
 
 
