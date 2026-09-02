@@ -1,0 +1,34 @@
+# 先定义一个公共 model 作为锚点
+_default_model: &default_model
+  model_name: "openai/qwen3.6-flash"
+  api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  api_key: "DASHSCOPE_API_KEY"
+  # 本地部署api的配置方法
+  # model_name: "openai/Qwen3.5-4B"
+  # api_base: "http://127.0.0.1:23333/v1"
+  # api_key: "dummy"
+  api_version: "OPENAI_API_VERSION"
+  # 仅对支持动态切换 thinking 模式的模型生效。
+  enable_thinking: false
+  reasoning_effort: "medium"
+  seed: 42
+  temperature: 1.0
+  max_retries: 8
+  max_tokens: 32768
+
+agent:
+  max_steps: 20
+  model: *default_model          # 直接引用整个 model
+
+tools:
+  enabled: ["overview", "clip_skim", "frame_inspect"]
+  overview:
+    num_frames: 64
+    model:
+      <<: *default_model         # 合并，再覆盖个别字段
+      enable_thinking: true
+  clip_skim:
+    num_frames: 16
+    model: *default_model
+  frame_inspect:
+    model: *default_model

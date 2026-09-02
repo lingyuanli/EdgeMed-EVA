@@ -1,0 +1,28 @@
+_default_model: &default_model
+  model_name: "openai/qwen3.6-flash"
+  api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  api_key: "DASHSCOPE_API_KEY"
+  api_version: "OPENAI_API_VERSION"
+  enable_thinking: false
+  reasoning_effort: "medium"
+  seed: 42
+  temperature: 1.0
+  max_retries: 8
+  max_tokens: 32768
+
+agent:
+  max_steps: 20
+  model: *default_model
+
+tools:
+  enabled: ["overview", "clip_skim", "frame_inspect"]
+  overview:
+    num_frames: 64
+    model:
+      <<: *default_model
+      enable_thinking: true
+  clip_skim:
+    num_frames: 16
+    model: *default_model
+  frame_inspect:
+    model: *default_model

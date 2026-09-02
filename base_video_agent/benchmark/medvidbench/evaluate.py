@@ -1,0 +1,475 @@
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+from typing import Optional
+
+import yaml
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from benchmark.medvidbench.run import conversation_value, write_report
+from benchmark.medvidbench.utils import (
+    append_record,
+    get_agent_model_name,
+    load_latest_records,
+    write_json,
+)
+
+
+DEFAULT_LEADERBOARD_DIR = "./data/MedVidBench/MedVidBench-Leaderboard"
+DEFAULT_EVALUATION_MODEL = "gpt-4.1"
+CONFIG_DIR = Path(__file__).with_name("config")
+LOCAL_CONFIG_PATH = CONFIG_DIR / "evaluation.yml"
+EXAMPLE_CONFIG_PATH = CONFIG_DIR / "evaluation.example.yml"
+TASKS = (
+    "dvc",
+    "tal",
+    "next_action",
+    "stg",
+    "rc",
+    "vs",
+    "skill_assessment",
+    "cvs_assessment",
+)
+TASK_METRICS = {
+    "dvc": ("dvc_f1", "dvc_llm"),
+    "tal": ("tag_miou_03", "tag_miou_05"),
+    "next_action": ("nap_acc",),
+    "stg": ("stg_miou",),
+    "rc": ("rc_llm",),
+    "vs": ("vs_llm",),
+    "skill_assessment": ("sa_acc",),
+    "cvs_assessment": ("cvs_acc",),
+}
+LLM_METRICS = {"dvc_llm", "vs_llm", "rc_llm"}
+METRIC_PATTERNS = {
+    "cvs_acc": r"^\s*component_balanced_accuracy:\s*([-+]?\d*\.?\d+)",
+    "nap_acc": r"^\s*accuracy:\s*([-+]?\d*\.?\d+)",
+    "sa_acc": r"^\s*aspect_balanced_accuracy:\s*([-+]?\d*\.?\d+)",
+    "stg_miou": r"^\s*mean_iou:\s*([-+]?\d*\.?\d+)",
+    "tag_miou_03": r"^\s*mIoU@0\.3:\s*([-+]?\d*\.?\d+)",
+    "tag_miou_05": r"^\s*mIoU@0\.5:\s*([-+]?\d*\.?\d+)",
+    "dvc_f1": r"^\s*temporal_f1:\s*([-+]?\d*\.?\d+)",
+    "dvc_llm": r"^\s*caption_score:\s*([-+]?\d*\.?\d+)",
+    "vs_llm": r"VS - Overall Evaluation[\s\S]*?score:\s*([-+]?\d*\.?\d+)",
+    "rc_llm": r"RC - Overall Evaluation[\s\S]*?score:\s*([-+]?\d*\.?\d+)",
+}
+
+
+def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Evaluate a completed MedVidBench run with the official code."
+    )
+    parser.add_argument("--run-dir", required=True)
+    parser.add_argument(
+        "--ground-truth-path",
+        default=None,
+        help="Override the validation Ground Truth path stored in run.json.",
+    )
+    parser.add_argument("--leaderboard-dir", default=DEFAULT_LEADERBOARD_DIR)
+    parser.add_argument("--tasks", nargs="+", choices=TASKS)
+    parser.add_argument(
+        "--skip-llm-judge",
+        action="store_true",
+        help="Compute deterministic metrics only.",
+    )
+    return parser.parse_args(argv)
+
+
+def load_json(path: Path):
+    if not path.is_file():
+        raise FileNotFoundError(f"File not found: {path}")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def load_evaluation_llm_config() -> dict:
+    config_path = (
+        LOCAL_CONFIG_PATH if LOCAL_CONFIG_PATH.is_file() else EXAMPLE_CONFIG_PATH
+    ).resolve()
+
+    if not config_path.is_file():
+        raise FileNotFoundError(f"MedVidBench config not found: {config_path}")
+    with config_path.open("r", encoding="utf-8") as file:
+        config = yaml.safe_load(file) or {}
+    if not isinstance(config, dict):
+        raise ValueError(f"MedVidBench config must be a mapping: {config_path}")
+    evaluation = config.get("evaluation", {})
+    llm = evaluation.get("llm", {}) if isinstance(evaluation, dict) else None
+    if not isinstance(llm, dict):
+        raise ValueError(f"evaluation.llm must be a mapping: {config_path}")
+
+    invalid_keys = [
+        key
+        for key, value in llm.items()
+        if value is not None and not isinstance(value, str)
+    ]
+    if invalid_keys:
+        raise ValueError(
+            f"evaluation.llm fields must be strings: {sorted(invalid_keys)}"
+        )
+
+    return {
+        "config_path": str(config_path),
+        "model": llm.get("model") or DEFAULT_EVALUATION_MODEL,
+        "api_base": llm.get("api_base"),
+        "api_key": llm.get("api_key"),
+    }
+
+
+def select_ground_truth(ground_truth: list[dict], sample_keys: list[str]) -> list[dict]:
+    if not isinstance(ground_truth, list):
+        raise ValueError("Ground truth must be a JSON array.")
+    indices = [int(key) for key in sample_keys]
+    invalid = [index for index in indices if index < 0 or index >= len(ground_truth)]
+    if invalid:
+        raise ValueError(f"Ground-truth indices out of range: {invalid[:10]}")
+    return [ground_truth[index] for index in indices]
+
+
+def validate_alignment(submission: list[dict], ground_truth: list[dict]) -> None:
+    if not isinstance(submission, list):
+        raise ValueError("submission.json must be a JSON array.")
+    if len(submission) != len(ground_truth):
+        raise ValueError(
+            f"Submission has {len(submission)} samples, but selected ground truth has "
+            f"{len(ground_truth)}."
+        )
+
+    for index, (prediction, reference) in enumerate(zip(submission, ground_truth)):
+        missing = {"id", "qa_type", "prediction"} - prediction.keys()
+        if missing:
+            raise ValueError(
+                f"Submission sample {index} is missing fields: {sorted(missing)}"
+            )
+        reference_id = reference.get("id")
+        if reference_id and prediction["id"] != reference_id:
+            raise ValueError(f"Sample {index} id does not match ground truth.")
+        reference_type = reference.get("qa_type")
+        if reference_type and prediction["qa_type"] != reference_type:
+            raise ValueError(f"Sample {index} qa_type does not match ground truth.")
+
+
+def normalize_action_label(value: object) -> str:
+    return " ".join(str(value).split()).casefold()
+
+
+def compute_nap_exact_accuracy(
+    submission: list[dict], ground_truth: list[dict]
+) -> float | None:
+    comparisons = [
+        (
+            normalize_action_label(prediction.get("prediction", "")),
+            normalize_action_label(
+                conversation_value(reference, {"gpt", "assistant"})
+            ),
+        )
+        for prediction, reference in zip(submission, ground_truth)
+        if prediction.get("qa_type") == "next_action"
+    ]
+    if not comparisons:
+        return None
+    correct = sum(prediction == reference for prediction, reference in comparisons)
+    return correct / len(comparisons)
+
+
+def enrich_validation_records(
+    records_path: Path,
+    latest_records: dict[str, dict],
+    sample_keys: list[str],
+    submission: list[dict],
+    ground_truth: list[dict],
+) -> dict[str, dict]:
+    comparison_fields = {"question", "ground_truth", "struc_info"}
+    for sample_key, prediction, reference in zip(
+        sample_keys, submission, ground_truth
+    ):
+        current = latest_records[sample_key]
+        if comparison_fields <= current.keys():
+            continue
+        enriched = {
+            **current,
+            "prediction": prediction["prediction"],
+            "data_source": reference.get(
+                "data_source", reference.get("dataset_name", "")
+            ),
+            "question": conversation_value(reference, {"human", "user"}),
+            "ground_truth": conversation_value(
+                reference, {"gpt", "assistant"}
+            ),
+            "struc_info": reference.get("struc_info", []),
+        }
+        append_record(records_path, enriched)
+        latest_records[sample_key] = enriched
+    return latest_records
+
+
+def parse_official_metrics(output: str) -> dict[str, float]:
+    marker = re.compile(r"^LEADERBOARD METRICS SUMMARY$", re.MULTILINE)
+    end_marker = "END LEADERBOARD METRICS SUMMARY"
+    starts = list(marker.finditer(output))
+    if not starts:
+        return {}
+    start = starts[-1].end()
+    end = output.find(end_marker, start)
+    output = output[start : end if end >= 0 else None]
+
+    metrics = {}
+    for name, pattern in METRIC_PATTERNS.items():
+        match = re.search(pattern, output, re.MULTILINE)
+        if match:
+            metrics[name] = float(match.group(1))
+    return metrics
+
+
+def run_official_evaluation(
+    command: list[str], cwd: Path, log_path: Path, env: dict[str, str]
+) -> str:
+    output = []
+    with log_path.open("w", encoding="utf-8", buffering=1) as log_file:
+        with subprocess.Popen(
+            command,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            env=env,
+        ) as process:
+            assert process.stdout is not None
+            for line in process.stdout:
+                print(line, end="")
+                log_file.write(line)
+                output.append(line)
+            return_code = process.wait()
+    if return_code:
+        raise RuntimeError(
+            f"Official evaluation failed with exit code {return_code}. See {log_path}."
+        )
+    return "".join(output)
+
+
+def evaluate_run(args: argparse.Namespace) -> int:
+    run_dir = Path(args.run_dir).expanduser().resolve()
+    leaderboard_dir = Path(args.leaderboard_dir).expanduser().resolve()
+    evaluation_script = leaderboard_dir / "evaluation" / "evaluate_predictions.py"
+    official_runner = Path(__file__).with_name("official_runner.py")
+
+    manifest = load_json(run_dir / "run.json")
+    if manifest.get("dataset") != "medvidbench":
+        raise ValueError(f"Not a MedVidBench run directory: {run_dir}")
+    dataset_name = manifest.get("dataset_variant")
+    if dataset_name == "test":
+        raise ValueError(
+            "The MedVidBench public test set has no local Ground Truth. "
+            "Upload submission.json to the Leaderboard instead."
+        )
+    ground_truth_argument = getattr(args, "ground_truth_path", None)
+    if ground_truth_argument:
+        ground_truth_path = Path(ground_truth_argument).expanduser().resolve()
+    elif dataset_name == "validation":
+        ground_truth_path = Path(manifest["metadata_path"]).expanduser().resolve()
+    else:
+        raise ValueError(
+            "This legacy run does not identify its dataset. Pass "
+            "--ground-truth-path explicitly."
+        )
+
+    records_path = run_dir / "records.jsonl"
+    latest_records = load_latest_records(records_path)
+    if any(
+        latest_records.get(key, {}).get("status") != "success"
+        for key in manifest["sample_keys"]
+    ):
+        raise ValueError("The run still has failed samples. Resume it before evaluation.")
+
+    submission_path = run_dir / "submission.json"
+    submission = load_json(submission_path)
+    ground_truth = select_ground_truth(
+        load_json(ground_truth_path), manifest["sample_keys"]
+    )
+    validate_alignment(submission, ground_truth)
+    latest_records = enrich_validation_records(
+        records_path,
+        latest_records,
+        manifest["sample_keys"],
+        submission,
+        ground_truth,
+    )
+    if not evaluation_script.is_file():
+        raise FileNotFoundError(f"Official evaluator not found: {evaluation_script}")
+
+    requested_tasks = list(args.tasks or TASKS)
+    expected_metrics = [
+        metric
+        for task in requested_tasks
+        for metric in TASK_METRICS[task]
+        if not (args.skip_llm_judge and metric in LLM_METRICS)
+    ]
+    llm_tasks = {"dvc", "rc", "vs"} & set(requested_tasks)
+    llm_enabled = bool(llm_tasks) and not args.skip_llm_judge
+    llm_config = load_evaluation_llm_config()
+    llm_model = llm_config["model"]
+    llm_api_base = llm_config["api_base"]
+    preflight_errors = []
+    if llm_enabled and not llm_config["api_key"]:
+        preflight_errors.append(
+            f"Evaluation API key is missing. Set evaluation.llm.api_key in "
+            f"{llm_config['config_path']}."
+        )
+    warnings = []
+
+    log_path = run_dir / "evaluation.log"
+    output = ""
+    execution_errors = []
+    if preflight_errors:
+        log_path.write_text("\n".join(preflight_errors) + "\n", encoding="utf-8")
+    else:
+        environment = os.environ.copy()
+        if llm_config["api_key"]:
+            environment["OPENAI_API_KEY"] = llm_config["api_key"]
+        with tempfile.TemporaryDirectory(prefix="medvidbench-eval-") as directory:
+            selected_ground_truth_path = Path(directory) / "ground_truth.json"
+            write_json(selected_ground_truth_path, ground_truth)
+            command = [
+                sys.executable,
+                str(official_runner),
+                "--model",
+                llm_model,
+            ]
+            if llm_api_base:
+                command.extend(["--api-base", llm_api_base])
+            command.extend(
+                [
+                    str(evaluation_script),
+                    str(submission_path),
+                    "--ground-truth",
+                    str(selected_ground_truth_path),
+                    "--grouping",
+                    "overall",
+                ]
+            )
+            if args.tasks:
+                command.extend(["--tasks", *args.tasks])
+            if args.skip_llm_judge:
+                command.append("--skip-llm-judge")
+            try:
+                output = run_official_evaluation(
+                    command, leaderboard_dir, log_path, environment
+                )
+            except RuntimeError as error:
+                execution_errors.append(str(error))
+                output = log_path.read_text(encoding="utf-8")
+
+    metrics = parse_official_metrics(output)
+    if "next_action" in requested_tasks:
+        nap_exact_acc = compute_nap_exact_accuracy(submission, ground_truth)
+        if nap_exact_acc is not None:
+            metrics["nap_exact_acc"] = nap_exact_acc
+            official_nap_acc = metrics.get("nap_acc")
+            if (
+                official_nap_acc is not None
+                and abs(official_nap_acc - nap_exact_acc) > 1e-12
+            ):
+                warnings.append(
+                    "Official NAP_acc differs from local exact label matching: "
+                    f"{official_nap_acc:.4f} vs {nap_exact_acc:.4f}."
+                )
+    task_errors = re.findall(
+        r"^Error running ([^ ]+) evaluation: (.+)$", output, re.MULTILINE
+    )
+    errors = (
+        preflight_errors
+        + execution_errors
+        + [f"{task}: {message}" for task, message in task_errors]
+    )
+    llm_calls = []
+    for completed, total in re.findall(
+        r"LLM Judge completed:\s*(\d+)/(\d+) successful(?: API calls)?", output
+    ):
+        completed_count, total_count = int(completed), int(total)
+        llm_calls.append(
+            {
+                "successful": completed_count,
+                "total": total_count,
+                "success_rate": completed_count / total_count if total_count else 0.0,
+            }
+        )
+        if completed_count < total_count:
+            warnings.append(
+                f"LLM evaluation completed {completed_count}/{total_count} calls successfully."
+            )
+        if total_count and completed_count == 0:
+            errors.append("All LLM evaluation calls failed.")
+    semantic_fallback = llm_enabled and "semantic_similarity" in output.lower()
+    if semantic_fallback:
+        for metric_key in LLM_METRICS:
+            metrics.pop(metric_key, None)
+        errors.append(
+            "The official evaluator used semantic-similarity fallback; these "
+            "scores are not comparable to Leaderboard LLM metrics."
+        )
+    missing_metrics = [key for key in expected_metrics if key not in metrics]
+    if missing_metrics:
+        errors.append("Missing required metrics: " + ", ".join(missing_metrics))
+    status = "failed" if errors else "complete"
+    evaluation = {
+        "status": status,
+        "dataset": dataset_name or "legacy",
+        "ground_truth_path": str(ground_truth_path),
+        "leaderboard_dir": str(leaderboard_dir),
+        "tasks": requested_tasks,
+        "skip_llm_judge": args.skip_llm_judge,
+        "expected_metrics": expected_metrics,
+        "missing_metrics": missing_metrics,
+        "metrics": metrics,
+        "llm": {
+            "enabled": llm_enabled,
+            "config_path": llm_config["config_path"],
+            "model": llm_model if llm_enabled else None,
+            "api_base": llm_api_base if llm_enabled else None,
+            "calls": llm_calls,
+        },
+        "warnings": warnings,
+        "errors": errors,
+    }
+    write_json(run_dir / "evaluation.json", evaluation)
+    write_report(
+        run_dir,
+        manifest.get("agent", "videoseek"),
+        manifest["mode"],
+        get_agent_model_name(
+            manifest.get("agent_config", {}),
+            manifest.get("agent", "videoseek"),
+        ),
+        manifest["sample_keys"],
+        submission,
+        latest_records,
+        metrics,
+        dataset_name or "validation",
+        evaluation,
+    )
+
+    print(f"Evaluation log: {log_path}")
+    print(f"Evaluation metrics: {run_dir / 'evaluation.json'}")
+    print(f"Report: {run_dir / 'report.md'}")
+    for warning in warnings:
+        print(f"Warning: {warning}")
+    if errors:
+        for error in errors:
+            print(f"Error: {error}")
+        return 1
+    return 0
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    return evaluate_run(parse_args(argv))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

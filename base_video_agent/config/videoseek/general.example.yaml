@@ -1,0 +1,22 @@
+model_name: "openai/qwen3.6-flash"
+api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+api_key: "DASHSCOPE_API_KEY"
+# 本地部署api的配置方法
+# model_name: "openai/Qwen3.5-4B"
+# api_base: "http://127.0.0.1:23333/v1"
+# api_key: "dummy"
+api_version: "OPENAI_API_VERSION"
+
+reasoning_effort: "medium"
+seed: 42
+temperature: 1.0
+max_steps: 20
+max_retries: 8
+max_tokens: 32768
+
+frame_sampling_factor: 4
+overview_base: 16
+skim_base: 4
+focus_base: 4
+
+tools: ["overview", "skim", "focus"]
