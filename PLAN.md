@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-02
-当前主阶段：`A1 archived / M1 real preflight blocked on final schema / schema-v2 retry next`
+当前主阶段：`A1 archived / M1 real Agent operational closure PASS / M2 paired causal arms next`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -106,6 +106,8 @@
 | 2026-09-02 | M0 fresh audit 推翻初始 closure PASS 并完成最小修复 | `region_inspect` 从未绑定的原始 frame 读取哈希而失败，E0 schema/trace 均为 0；旧 verifier 仅验证错误指标可复算，未执行质量准入 | 改用已绑定 selected frame 哈希；run manifest 必须声明 E0 最低值与最大失败工具数。fresh run 三次工具完成、E0 全 1、七项 verifier PASS；全仓 73 tests 通过。该修复不改变任何模型或 benchmark 结果 |
 | 2026-09-02 | M1 Qwen Agent backend 与 exact-resume batch contract 本地通过 | 新后端复用冻结的 NF4/FP16/eager/greedy/non-thinking 路径；每样本原子 checkpoint，reference 只由独立 finalize-eval 阶段读取 | 81 tests 通过；只证明离线接口和恢复语义，真实 V100 模型加载、工具决策、schema 合规与吞吐仍待 ≤16 条 smoke |
 | 2026-09-02 | M1 real preflight-1 在单 V100 完成推理但被 E0 门阻断 | 模型 revision/两片权重哈希通过，1/1 inference 与 region tool 完成；final 使用 `id` 而非 `evidence_id`，并输出错误字段类型，scorer 得到 schema/citation 0、trace binding 1 | verifier 正确 `BLOCK`；正确选项不作效果结论。只增强 final schema 字段/类型/枚举提示与 scorer 检查，工具、样本、解码和答案策略不变，以新 commit/run 重试 |
+| 2026-09-02 | M1 schema-v2 单样本通过，8 条放大运行连续暴露证据状态机与 cross-field 错误 | 单样本 E0 全 1；首个 smoke8 在 6/8 后因第 7 条首步无工具而停止；强制 overview 后 8/8 完成但 overview evidence 错填全图 region，E0 schema 仅 7/8 | 两次失败 run 均保留；增加显式 first-acquisition policy、commit-bound resume 和带原值日志的非 region 坐标 canonicalization；不修改答案或参考数据 |
+| 2026-09-02 | M1 单 V100 8 条 real-model operational closure 通过 | commit `6de6909` 下 8/8 inference、8/8 工具、E0 三项全 1，verifier 七项全 PASS；峰值 allocated/reserved 3,562.7/3,946 MiB；仅一条 policy intervention 与一条结构归一化 | 只确认运行、证据绑定和评测闭环；E1 3/8 不是 efficacy 结论，E2 无框、E3/医学正确性 DEFER。PMC-512 对该家族继续只作 analysis/smoke，不再用于答案策略调参 |
 
 ## 7. External Development Gate Contract
 

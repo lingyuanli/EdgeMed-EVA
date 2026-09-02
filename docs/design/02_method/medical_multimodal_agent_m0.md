@@ -103,7 +103,7 @@ references(separate, scorer-only) ────┤
 7. 达到预算时可基于已有成功证据 final，但 finish reason 必须为 `max_steps`；
 8. 不把隐藏 CoT 当成 evidence；只评估显式 observation、引用和工具产物。
 
-后端目前是 Protocol，不包含真实 Qwen 实现。M1 将把已验证的 Qwen3.5-4B V100 推理适配器接到 `decide/finalize`，同时保持工具和 scorer 不变，以便归因。
+M0 冻结时后端只有 Protocol。后续 M1 已把 Qwen3.5-4B V100 推理适配器接到 `decide/finalize`，真实运行、失败链和当前边界见 [`qwen_agent_m1_runtime.md`](../04_implementation/qwen_agent_m1_runtime.md)。工具和 scorer 保持独立，以便归因。
 
 ## 5. 输出与 evidence 绑定
 

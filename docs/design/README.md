@@ -1,6 +1,6 @@
 # Med-CMR 小模型多模态医学推理：设计文档入口
 
-状态：`BASELINE COMPLETE / AGENT M0 CLOSURE PASS / REAL AGENT SCORE PENDING`
+状态：`BASELINE COMPLETE / AGENT M1 OPERATIONAL PASS / AGENT EFFICACY PENDING`
 更新：2026-09-02
 
 ## 1. 文档权威顺序
@@ -22,7 +22,7 @@
 - **专属多模态 Agent**：针对细粒度视觉证据、跨视图/时间整合和长尾临床逻辑进行受控工具调用；
 - **证据 + 结果多维评测**：答案、证据、因果依赖、校准、工具净收益和成本同时报告。
 
-当前已完成可信 B0、训练迁移诊断和 Agent M0 synthetic 闭环。M0 只证明工具/轨迹/评分/verifier 接线正确，不是模型效果。下列内容仍不能写成结果：
+当前已完成可信 B0、训练迁移诊断、Agent M0 synthetic 闭环和 M1 单 V100 的 8 条真实模型 operational closure。M1 只证明 Qwen backend、工具策略、轨迹、评分、显存和 verifier 接线正确，不是模型效果。下列内容仍不能写成结果：
 
 - Qwen3.5-4B 医疗 Agent 在真实开发集上的净增益；
 - MedVidBench 本地归档所述官方 evaluator 与 test leaderboard 的独立复现；
@@ -46,6 +46,7 @@ Video Agent 专项入口：
 
 - [用户提供 `base_video_agent` 行为审计](01_survey/base_video_agent_audit.md)
 - [医疗多模态 Agent M0 与评测闭环](02_method/medical_multimodal_agent_m0.md)
+- [Qwen3.5-4B Agent M1 真实运行与失败链](04_implementation/qwen_agent_m1_runtime.md)
 
 ## 4. 从 AlphaResearcher-Bench 借用什么
 

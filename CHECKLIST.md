@@ -61,8 +61,8 @@
 - [x] Qwen3.5-4B backend adapter 与可恢复 batch runner 已实现并通过 mock exact-resume contract
 - [x] reference-only finalize-eval 阶段已实现；推理结束前 run 目录不存在 references
 - [x] V100 real preflight-1 完成模型/工具路径并由 E0 质量门正确 BLOCK；失败产物保留
-- [ ] final schema-v2 同样本 answer-blind operational retry 通过 E0 门
-- [ ] 单 V100、≤16 条 answer-blind real-model operational smoke 完成
+- [x] final schema-v2 同样本 answer-blind operational retry 通过 E0 门
+- [x] 单 V100、8 条 answer-blind real-model operational smoke 完成；E0 全 1、8/8 工具成功、峰值显存收据已绑定
 - [ ] source-diverse 开发集上的 no-tool/tool/forced/oracle/compute-matched 对照完成
 - [ ] 工具净收益与 evidence dependency 通过多 seed/干预门
 
