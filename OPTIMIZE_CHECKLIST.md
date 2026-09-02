@@ -56,7 +56,9 @@
 - [x] SLAKE B0-vs-M1a retention slice completed and hash-bound: exact +8.6420, F1 +5.5843, both paired CI lower bounds positive
 - [x] H3 general semantic forgetting weakened; broad H1 same-source-only transfer weakened
 - [x] PMC answer-preserving option-rotation diagnostic launched under frozen contract
-- [ ] PMC answer-preserving option-rotation diagnostic completed
+- [x] PMC answer-preserving option-rotation diagnostic completed; corrected paired invariance delta -8.5938 with CI wholly negative
+- [x] scorer `None -> None` overcount fixed by commit `3f95b2a`; buggy file preserved and GPU outputs unchanged
+- [x] H2 answer-letter/order sensitivity supported; single-letter SFT family stopped
 
 ## Smoke Queue
 
@@ -74,4 +76,4 @@
 
 ## Next Concrete Action
 
-Complete the active PMC option-rotation slice and compare B0/M1a content consistency and rotated accuracy. Do not reopen Med-CMR.
+Implement M2a semantic option-content SFT as the smallest objective change. Require original-order gain, rotated-order non-inferiority, and SLAKE retention before any new milestone. Do not reopen Med-CMR.

@@ -2,7 +2,7 @@
 
 Campaign ID: `transfer-failure-20260902`  
 Parent: frozen `m1a-answer-qlora` seed `20260903`, 128 steps  
-Campaign status: `slice A passed / slice B running`
+Campaign status: `completed / H2 supported / semantic-objective redesign next`
 
 ## 1. Boundary and question
 
@@ -40,6 +40,7 @@ These are candidate explanations, not conclusions. Aggregate Med-CMR results alo
 - Metrics: rotated accuracy, original-versus-rotated content consistency, and B0-versus-M1a paired difference.
 - Stop rule: if M1a loses its original gain or its content consistency is materially below B0, do not add more answer-letter SFT; move to option-text/semantic objectives.
 - Frozen implementation: `scripts/run-pmc-choice-rotation.sh`; the transform records the old-to-new label mapping without exposing the reference answer to inference.
+- Completed result: M1a rotated accuracy advantage shrank to `+1.9531` points with CI crossing zero. M1a content consistency was `63.2813%` versus B0 `71.8750%`; paired delta `-8.5938`, CI `[-13.2813,-4.0967]`, McNemar `p=0.0004485`. H2 is supported.
 
 ### Slice C — source-diverse five-choice admission (future gate)
 
@@ -50,7 +51,7 @@ These are candidate explanations, not conclusions. Aggregate Med-CMR results alo
 ## 4. Decision map
 
 1. If Slice A fails, archive M1a as the parent for evidence/Agent training. Return to B0 and redesign the objective around semantic answer text plus source mixing.
-2. If Slice A passes but Slice B fails, retain M1a only as a domain adapter candidate and replace letter-token supervision with answer-text or option-content supervision.
+2. If Slice A passes but Slice B fails, retain M1a only as a domain adapter candidate and replace letter-token supervision with answer-text or option-content supervision. **Observed branch: selected.**
 3. If both pass, the Med-CMR failure remains unresolved distribution shift; admit a source-diverse five-choice gate before any new training.
 4. No branch authorizes another Med-CMR evaluation. A new test run requires a separate frozen mechanism milestone and one-shot budget.
 

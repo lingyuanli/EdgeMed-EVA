@@ -66,5 +66,5 @@
 - [x] M1a archived without per-sample test tuning or repeated test evaluation
 - [x] M1a transfer-failure campaign and non-Med-CMR stop rules frozen
 - [x] SLAKE source-diverse retention comparison complete; M1a improved exact/F1 with paired CIs wholly positive
-- [ ] PMC option-label invariance comparison complete
+- [x] PMC option-label invariance comparison complete; M1a significantly less content-consistent than B0
 - [ ] golden validation annotation protocol frozen before model scoring
