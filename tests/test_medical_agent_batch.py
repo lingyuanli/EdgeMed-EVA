@@ -50,6 +50,9 @@ class FakeBackend:
             "tool_trace_ids": trace_ids,
         }
 
+    def runtime_summary(self):
+        return {"peak_allocated_mib": 123.0, "peak_reserved_mib": 128.0}
+
 
 def _rows(root: Path) -> list[dict]:
     rows = []
@@ -97,6 +100,7 @@ def test_batch_exact_resume_and_reference_isolated_finalize(tmp_path: Path) -> N
     )
     assert second.finalized == ["s1"]
     assert manifest["status"] == "inference_completed"
+    assert manifest["backend_runtime"]["peak_allocated_mib"] == 123.0
     assert [row["sample_id"] for row in read_jsonl(run_dir / "predictions.jsonl")] == ["s0", "s1"]
     assert not (run_dir / "references.jsonl").exists()
 

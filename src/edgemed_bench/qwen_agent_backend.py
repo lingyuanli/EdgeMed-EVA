@@ -126,6 +126,8 @@ class Qwen35MedicalAgentBackend:
             low_cpu_mem_usage=True,
         )
         self.model.eval()
+        torch.cuda.synchronize()
+        torch.cuda.reset_peak_memory_stats()
         self.receipt = {
             "backend": "qwen35-medical-agent/v1",
             "prompt_contract_sha256": hashlib.sha256(
@@ -157,6 +159,18 @@ class Qwen35MedicalAgentBackend:
                 "gpu": torch.cuda.get_device_name(0),
                 "capability": list(torch.cuda.get_device_capability(0)),
             },
+        }
+
+    def runtime_summary(self) -> dict[str, Any]:
+        """Return live CUDA memory evidence without changing inference behavior."""
+        self._torch.cuda.synchronize()
+        mib = 1024**2
+        return {
+            "device": self._torch.cuda.get_device_name(0),
+            "allocated_mib": self._torch.cuda.memory_allocated(0) / mib,
+            "reserved_mib": self._torch.cuda.memory_reserved(0) / mib,
+            "peak_allocated_mib": self._torch.cuda.max_memory_allocated(0) / mib,
+            "peak_reserved_mib": self._torch.cuda.max_memory_reserved(0) / mib,
         }
 
     @staticmethod

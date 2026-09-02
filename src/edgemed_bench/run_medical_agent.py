@@ -105,6 +105,16 @@ def _checkpoint_path(checkpoint_dir: Path, sample_id: str) -> Path:
     return checkpoint_dir / f"{hashlib.sha256(sample_id.encode()).hexdigest()}.json"
 
 
+def _backend_runtime_summary(backend: AgentBackend) -> dict[str, Any] | None:
+    summarize = getattr(backend, "runtime_summary", None)
+    if not callable(summarize):
+        return None
+    summary = summarize()
+    if not isinstance(summary, dict):
+        raise TypeError("Backend runtime_summary() must return a dictionary")
+    return summary
+
+
 def _load_checkpoints(
     rows: list[dict[str, Any]], checkpoint_dir: Path, contract_sha256: str
 ) -> dict[str, dict[str, Any]]:
@@ -260,6 +270,7 @@ def run_agent_batch(
             if interrupt_after is not None and completed_this_process >= interrupt_after:
                 raise InterruptedError("Injected interruption after complete sample checkpoint")
     except BaseException as exc:
+        backend_runtime = _backend_runtime_summary(backend)
         manifest.update(
             {
                 "status": "failed",
@@ -268,6 +279,8 @@ def run_agent_batch(
                 "completed_total": len(checkpoints),
             }
         )
+        if backend_runtime is not None:
+            manifest["backend_runtime"] = backend_runtime
         _atomic_json(manifest_path, manifest)
         with events_path.open("a", encoding="utf-8") as events:
             append_jsonl(
@@ -282,6 +295,7 @@ def run_agent_batch(
             )
         raise
     output_hashes = _materialize(normalized, checkpoints, run_dir)
+    backend_runtime = _backend_runtime_summary(backend)
     manifest.update(
         {
             "status": "inference_completed",
@@ -290,6 +304,8 @@ def run_agent_batch(
             "output_hashes": output_hashes,
         }
     )
+    if backend_runtime is not None:
+        manifest["backend_runtime"] = backend_runtime
     _atomic_json(manifest_path, manifest)
     with events_path.open("a", encoding="utf-8") as events:
         append_jsonl(
