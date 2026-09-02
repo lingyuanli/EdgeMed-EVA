@@ -62,6 +62,7 @@
 - [x] M2a semantic option prompt, target, unique-content parser, and two-step smoke script implemented
 - [x] M2a two-step finite/save/reload smoke passed on V100; 2 applied steps, finite loss, 4/4 option-text reload parses
 - [x] M2a seed3/128 pilot and original/rotated same-prompt B0 control script frozen
+- [x] M2a seed3/128 pilot launched in tmux from remote commit `66f89c3`
 - [ ] M2a seed3/128 original/rotated pilot completed
 
 ## Smoke Queue
