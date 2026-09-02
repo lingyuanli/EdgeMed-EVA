@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-02
-当前主阶段：`transfer-failure campaign / SLAKE retention slice running`
+当前主阶段：`transfer-failure campaign / SLAKE full retention slice running`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -93,6 +93,7 @@
 | 2026-09-02 | SLAKE direct-reasoning 64-token full launch 在 51 条后停止 | answer-blind operational audit 仅 5/51 形成可解析 `Answer:`，其余在推理段截断；继续会把截断混入语义保留 | 保留失败产物与哈希；冻结 answer-only proxy prompt，先过 32 条 ≥31 parseable smoke 后再重启 full slice |
 | 2026-09-02 | SLAKE direct-reasoning 128-token bounded retry 为 29/32 parseable | 三条仍耗尽 128 token；该 prompt 同时测量冗长程度与语义，不适合作为低成本 retention gate | 不再增加 reasoning token；对 B0/M1a 均执行 answer-only 32-token operational smoke |
 | 2026-09-02 | 首轮 answer-only smoke 在旧 parser 下 B0 15/32、M1a 1/32 | answer-blind raw-output audit 显示失败主要是 `MRI`/`Yes` 等唯一单行裸答案，而非空输出或推理截断 | 仅为 answer-only variant 接受 ≤20 token 的唯一非空行；direct Med-CMR open parser 不变，以新 commit/run ID 重跑 smoke |
+| 2026-09-02 | variant-scoped parser 后 B0/M1a answer-only smoke 均为 32/32 parseable | B0 `15 marker + 17 bare`，M1a `1 + 31`；预测哈希与 receipt 冻结 | operational gate passed；启动 1,053 条双模型 full SLAKE retention，不访问 Med-CMR |
 
 ## 7. External Development Gate Contract
 

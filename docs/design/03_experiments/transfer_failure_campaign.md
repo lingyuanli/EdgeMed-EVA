@@ -2,7 +2,7 @@
 
 Campaign ID: `transfer-failure-20260902`  
 Parent: frozen `m1a-answer-qlora` seed `20260903`, 128 steps  
-Campaign status: `slice A running / slice B implementation ready`
+Campaign status: `slice A full running / slice B implementation ready`
 
 ## 1. Boundary and question
 
@@ -29,6 +29,7 @@ These are candidate explanations, not conclusions. Aggregate Med-CMR results alo
 - Metrics: normalized exact, token F1, parse status, and predeclared `answer_type`, `base_type`, `content_type`, and `modality` slices.
 - Metric label: external retention proxy only; it is not the unavailable official Med-CMR open judge.
 - Operational gate: B0 and M1a must each produce at least 31/32 parseable short answers within 32 tokens on the same answer-blind smoke. `Answer: value` and a unique nonempty line of at most 20 whitespace tokens are accepted only for this answer-only variant; the direct Med-CMR open parser is unchanged. The earlier direct-reasoning prompt at 64 tokens was stopped after 51 rows because 46 were truncated before `Answer:`; a bounded 128-token retry reached only 29/32. The first answer-only smoke showed that B0/M1a usually emit valid bare single-line answers despite omitting the requested marker, so its parser contract failed at 15/32 and 1/32. All failed directories and hashes remain preserved; no references were inspected.
+- Passed preflight: B0 `32/32` parseable (`15 answer_only + 17 bare_answer`, predictions SHA-256 `ad8b330d…1834f`); M1a `32/32` (`1 + 31`, `ec2bd9b2…e6f7a`). Full Slice A launched only after this receipt passed.
 - Promotion gate: the 95% paired interval lower bound must be at least `-1.0` point for both exact and token F1. Any interval wholly below `-1.0` archives M1a as a general-retention parent.
 
 ### Slice B — answer-label invariance (diagnostic)
