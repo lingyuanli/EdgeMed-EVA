@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 
 ANSWER_MARKER = re.compile(r"(?im)^\s*answer\s*[:\-]\s*[\(\[]?([A-E])[\)\]]?\s*[\.!]?\s*$")
 LEADING_OPTION = re.compile(r"(?i)^\s*[\(\[]?([A-E])[\)\].:\-]\s*")
@@ -26,6 +27,32 @@ def parse_mcq(text: str) -> tuple[str | None, str]:
     if line:
         return line.group(1).upper(), "standalone_line"
     return None, "invalid"
+
+
+def _normalize_option_text(value: object) -> str:
+    text = unicodedata.normalize("NFKC", str(value)).casefold()
+    text = re.sub(r"[^\w]+", " ", text, flags=re.UNICODE)
+    return " ".join(text.split())
+
+
+def parse_option_text_mcq(
+    text: str, options: dict[str, str]
+) -> tuple[str | None, str]:
+    """Map an answer text to exactly one visible option without using references."""
+    stripped = text.strip()
+    answer_match = OPEN_ANSWER.search(stripped)
+    candidate = answer_match.group(1).strip() if answer_match else stripped
+    if not candidate or len([line for line in candidate.splitlines() if line.strip()]) != 1:
+        return None, "invalid_option_text"
+    normalized = _normalize_option_text(candidate)
+    matches = [
+        letter
+        for letter, option in options.items()
+        if _normalize_option_text(option) == normalized
+    ]
+    if len(matches) != 1:
+        return None, "invalid_option_text"
+    return matches[0], "option_text_match"
 
 
 def parse_structured_mcq(

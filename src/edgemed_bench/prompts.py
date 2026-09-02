@@ -5,7 +5,12 @@ from __future__ import annotations
 import hashlib
 
 
-MCQ_PROMPT_VARIANTS = ("direct", "structured_evidence", "evidence_answer_v2")
+MCQ_PROMPT_VARIANTS = (
+    "direct",
+    "structured_evidence",
+    "evidence_answer_v2",
+    "semantic_option",
+)
 OPEN_PROMPT_VARIANTS = ("direct", "answer_only")
 
 
@@ -25,6 +30,13 @@ def mcq_prompt(
     )
     if variant == "direct":
         return stem + f"Answer only with the option letter (A–{option_letters[-1]})."
+    if variant == "semantic_option":
+        return stem + (
+            "Return exactly one line in this format:\n"
+            "Answer: <complete text of the single best option>\n"
+            "Copy the selected option text exactly. Do not output an option letter, reasoning, "
+            "explanation, markdown, or any other text."
+        )
     if variant == "structured_evidence":
         return stem + (
             "Return exactly one compact JSON object with no markdown or extra text:\n"

@@ -20,6 +20,7 @@ from .parsing import (
     parse_mcq,
     parse_open,
     parse_open_answer_only,
+    parse_option_text_mcq,
     parse_structured_mcq,
 )
 from .prompts import (
@@ -342,6 +343,11 @@ def main() -> None:
                     "parsed_observation": observation,
                     "parsed_hypotheses": hypotheses,
                 }
+            elif args.kind == "mcq" and args.prompt_variant == "semantic_option":
+                parsed_answer, parse_status = parse_option_text_mcq(
+                    raw_output, row["options"]
+                )
+                parsed = {"parsed_answer": parsed_answer}
             elif args.kind == "mcq":
                 parsed_answer, parse_status = parse_mcq(raw_output)
                 parsed: dict[str, Any] = {"parsed_answer": parsed_answer}

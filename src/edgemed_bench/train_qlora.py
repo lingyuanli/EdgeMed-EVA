@@ -53,8 +53,22 @@ def require_finite_gradient_norm(value: Any, step: int) -> float:
     return result
 
 
-def encode_example(processor: Any, row: dict[str, Any], image: Image.Image) -> dict[str, Any]:
-    prompt = mcq_prompt(row["question"], row["options"], variant="direct")
+def assistant_target(row: dict[str, Any], target_mode: str) -> str:
+    if target_mode == "letter":
+        return str(row["answer"])
+    if target_mode == "option_text":
+        return f"Answer: {row['options'][row['answer']]}"
+    raise ValueError(f"Unknown target mode: {target_mode}")
+
+
+def encode_example(
+    processor: Any,
+    row: dict[str, Any],
+    image: Image.Image,
+    target_mode: str = "letter",
+) -> dict[str, Any]:
+    prompt_variant = "direct" if target_mode == "letter" else "semantic_option"
+    prompt = mcq_prompt(row["question"], row["options"], variant=prompt_variant)
     user = {
         "role": "user",
         "content": [
@@ -71,7 +85,13 @@ def encode_example(processor: Any, row: dict[str, Any], image: Image.Image) -> d
         return_tensors="pt",
     )
     full = processor.apply_chat_template(
-        [user, {"role": "assistant", "content": [{"type": "text", "text": row["answer"]}]}],
+        [
+            user,
+            {
+                "role": "assistant",
+                "content": [{"type": "text", "text": assistant_target(row, target_mode)}],
+            },
+        ],
         tokenize=True,
         add_generation_prompt=False,
         enable_thinking=False,
@@ -103,6 +123,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20260901)
     parser.add_argument("--max-image-pixels", type=int, default=786432)
     parser.add_argument("--grad-scaler-init-scale", type=float, default=1.0)
+    parser.add_argument("--target-mode", choices=("letter", "option_text"), default="letter")
     args = parser.parse_args()
 
     import accelerate
@@ -143,14 +164,21 @@ def main() -> None:
         raise FileExistsError(f"Training run dir already exists: {run_dir}")
     run_dir.mkdir(parents=True)
     events_path = run_dir / "events.jsonl"
+    prompt_variant = "direct" if args.target_mode == "letter" else "semantic_option"
     contract = {
         "schema_version": "edgemed-t1a-qlora-contract/v1",
         "manifest_sha256": sha256_file(args.manifest),
         "references_sha256": sha256_file(args.references),
         "model_source_manifest_sha256": sha256_file(args.model_source_manifest),
-        "prompt_sha256": prompt_hash("mcq", "direct", option_letters),
+        "prompt_sha256": prompt_hash("mcq", prompt_variant, option_letters),
+        "prompt_variant": prompt_variant,
         "option_letters": option_letters,
-        "objective": "assistant-answer-tokens-only",
+        "objective": (
+            "assistant-answer-letter-tokens-only"
+            if args.target_mode == "letter"
+            else "assistant-option-text-tokens-only"
+        ),
+        "target_mode": args.target_mode,
         "max_steps": args.max_steps,
         "gradient_accumulation": args.gradient_accumulation,
         "learning_rate": args.learning_rate,
@@ -267,7 +295,7 @@ def main() -> None:
             with Image.open(image_path) as source:
                 image = source.convert("RGB")
             image = resize_to_pixel_budget(image, args.max_image_pixels)
-            batch = encode_example(processor, row, image)
+            batch = encode_example(processor, row, image, target_mode=args.target_mode)
             batch = {key: value.to("cuda") for key, value in batch.items()}
             with torch.autocast("cuda", dtype=torch.float16):
                 loss = model(**batch, use_cache=False).loss

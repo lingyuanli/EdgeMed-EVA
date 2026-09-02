@@ -3,6 +3,7 @@ from edgemed_bench.parsing import (
     parse_mcq,
     parse_open,
     parse_open_answer_only,
+    parse_option_text_mcq,
     parse_structured_mcq,
 )
 from edgemed_bench.prompts import mcq_prompt, open_prompt, prompt_hash
@@ -73,6 +74,23 @@ def test_evidence_answer_v2_prompt_is_minimal_and_answer_blind() -> None:
         prompt_hash("mcq"),
         prompt_hash("mcq", "structured_evidence"),
     }
+
+
+def test_semantic_option_prompt_and_parser_use_visible_option_text() -> None:
+    options = {"A": "left lower lobe", "B": "right upper lobe", "C": "heart", "D": "liver"}
+    prompt = mcq_prompt("Where?", options, variant="semantic_option")
+    assert "complete text" in prompt
+    assert "Do not output an option letter" in prompt
+    assert prompt_hash("mcq", "semantic_option", "ABCD") != prompt_hash(
+        "mcq", option_letters="ABCD"
+    )
+    assert parse_option_text_mcq("Answer: Right upper lobe!", options) == (
+        "B",
+        "option_text_match",
+    )
+    assert parse_option_text_mcq("B", options) == (None, "invalid_option_text")
+    duplicate = {"A": "same", "B": "same", "C": "other", "D": "last"}
+    assert parse_option_text_mcq("same", duplicate) == (None, "invalid_option_text")
 
 
 def test_mcq_parser_is_conservative() -> None:
