@@ -58,7 +58,8 @@
 - [x] synthetic closure fresh audit 暴露并修复 `region_inspect` 哈希错误与 verifier 无质量门问题
 - [x] run manifest 显式声明 E0 最低阈值和最大失败工具数；缺失质量门时 verifier BLOCK
 - [x] repaired synthetic artifact closure 七项 verifier 检查 PASS；原 false-pass 形状被回归测试拒绝；全仓 73 tests 通过
-- [ ] Qwen3.5-4B backend adapter 与可恢复 batch runner 完成
+- [x] Qwen3.5-4B backend adapter 与可恢复 batch runner 已实现并通过 mock exact-resume contract
+- [x] reference-only finalize-eval 阶段已实现；推理结束前 run 目录不存在 references
 - [ ] 单 V100、≤16 条 answer-blind real-model operational smoke 完成
 - [ ] source-diverse 开发集上的 no-tool/tool/forced/oracle/compute-matched 对照完成
 - [ ] 工具净收益与 evidence dependency 通过多 seed/干预门

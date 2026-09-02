@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-02
-当前主阶段：`A1 archived / medical Agent M0 repaired closure passed / Qwen backend M1 next`
+当前主阶段：`A1 archived / medical Agent M1 local contract passed / V100 smoke next`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -104,6 +104,7 @@
 | 2026-09-02 | A1 四视图 Agent 完成并归档 | 58.0078% 与 B0 相同，较 M2a `-4.8828` 且 CI `[-8.3984,-1.5625]`；invalid 降至 4、顺序不变量通过，但成本为 4 calls/question | shifts 2/3 的 45.1172/45.7031% 弱视图拖累 majority vote；禁止按已见结果挑 view，PMC-512 对该家族转为 analysis-only |
 | 2026-09-02 | VideoSpy 行为审计与医疗 Agent M0 synthetic 闭环通过 | 显式工具白名单、三类确定性视觉工具、完整轨迹、独立 finalizer、reference-isolated scorer 与 verifier 已实现；全仓 71 tests 通过 | 仅跨过工程闭环边界；真实 Qwen backend、医疗语义正确性、因果工具增益和 MedVidBench official score 均未建立 |
 | 2026-09-02 | M0 fresh audit 推翻初始 closure PASS 并完成最小修复 | `region_inspect` 从未绑定的原始 frame 读取哈希而失败，E0 schema/trace 均为 0；旧 verifier 仅验证错误指标可复算，未执行质量准入 | 改用已绑定 selected frame 哈希；run manifest 必须声明 E0 最低值与最大失败工具数。fresh run 三次工具完成、E0 全 1、七项 verifier PASS；全仓 73 tests 通过。该修复不改变任何模型或 benchmark 结果 |
+| 2026-09-02 | M1 Qwen Agent backend 与 exact-resume batch contract 本地通过 | 新后端复用冻结的 NF4/FP16/eager/greedy/non-thinking 路径；每样本原子 checkpoint，reference 只由独立 finalize-eval 阶段读取 | 81 tests 通过；只证明离线接口和恢复语义，真实 V100 模型加载、工具决策、schema 合规与吞吐仍待 ≤16 条 smoke |
 
 ## 7. External Development Gate Contract
 

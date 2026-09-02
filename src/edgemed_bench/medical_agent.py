@@ -85,6 +85,8 @@ def run_medical_agent(
             raise TypeError("Agent backend decision must be an object")
         tool_call = turn.get("tool_call")
         assistant_message = {"role": "assistant", "content": turn.get("content", "")}
+        if isinstance(turn.get("_model_call"), dict):
+            assistant_message["model_call"] = turn["_model_call"]
         if tool_call is not None:
             assistant_message["tool_call"] = tool_call
         messages.append(assistant_message)
@@ -109,7 +111,11 @@ def run_medical_agent(
     final = backend.finalize(messages, FINAL_SCHEMA)
     if not isinstance(final, dict):
         raise TypeError("Agent finalizer must return an object")
-    messages.append({"role": "assistant", "content": final, "phase": "final"})
+    final_model_call = final.pop("_model_call", None)
+    final_message = {"role": "assistant", "content": final, "phase": "final"}
+    if isinstance(final_model_call, dict):
+        final_message["model_call"] = final_model_call
+    messages.append(final_message)
     prediction = {
         "schema_version": "edgemed-medical-agent-prediction/v1",
         "sample_id": sample["sample_id"],
