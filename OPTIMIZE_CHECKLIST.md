@@ -8,7 +8,7 @@
 - primary optimize submode: `train`
 - incumbent: `qwen35-4b-medcmr-b0`, verified MCQ accuracy `27.1690%`
 - promoted line: none; zero-shot B1 failed the frozen external-development comparison
-- active implementation candidate: `a1-semantic-order-consensus`, frozen-weight multi-view Agent inference
+- active implementation candidate: none; A1 archived and PMC-512 frozen analysis-only for this family
 - full-eval queue: empty; Med-CMR test scoring is prohibited until the candidate and evaluation budget are frozen
 
 ## Control Checks
@@ -79,7 +79,12 @@
 - [x] A1 semantic order-consensus Agent preregistered, implemented, and covered by order-invariance/ambiguity tests
 - [x] A1 shift-2/shift-3 answer-blind smokes passed 8/8 and 8/8, all option-text parseable
 - [x] A1 full missing-view campaign launched in remote tmux from commit `9699b67`
-- [ ] A1 full four-view consensus and frozen PMC gate completed
+- [x] A1 full four-view consensus completed with 512/512 per missing view and exit code zero
+- [x] A1 operational gates passed: four invalid outputs and exact view-argument-order invariance
+- [x] A1 archived: 58.0078% equals B0 and is -4.8828 points below M2a with paired CI wholly negative
+- [x] post-gate existing-output diagnostic recorded: shifts 0/1/2/3 score 62.8906/60.1563/45.1172/45.7031%
+- [x] PMC-512 frozen analysis-only for this family; favorable-view selection from observed results prohibited
+- [ ] admit a separate source-diverse MCQ calibration/validation split before designing A2
 
 ## Smoke Queue
 
@@ -97,4 +102,4 @@
 
 ## Next Concrete Action
 
-Preregister A1 semantic order-consensus Agent over frozen M2a weights. Aggregate complete option-text predictions across all four cyclic views with an order-independent tie rule; compare against frozen B0 and M2a before any SLAKE or Med-CMR access.
+Admit a separate source-diverse MCQ calibration/validation split and audit overlap before any A2 confidence weighting, early stop, or two-view policy. Do not tune A2 from PMC-512 and do not reopen Med-CMR.

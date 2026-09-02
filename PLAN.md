@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-02
-当前主阶段：`A1 semantic option-order consensus Agent full missing-view evaluation running`
+当前主阶段：`A1 archived / new source-diverse MCQ calibration gate required`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -64,7 +64,7 @@
 ## 5. Checklist Link
 
 - checklist path：`CHECKLIST.md`。
-- next item：预注册并实现 A1 semantic option-order consensus Agent；冻结 M2a 权重，用四个 cyclic views 的 option-content identity 做 order-independent vote。Med-CMR test 保持关闭。
+- next item：准入新的 source-diverse MCQ calibration/validation split；冻结 PMC-512 为 analysis-only，再设计 A2 calibrated Agent。Med-CMR test 保持关闭。
 
 ## 6. Revision Log
 
@@ -101,6 +101,7 @@
 | 2026-09-02 | M2b seed3/128 完成并归档 | consistency `+8.5938`，CI `[3.9063,13.4766]`；但原序 `-1.1719`、轮换 `-3.1250`，准确率门均失败 | 不搜索 M2b seed，不进入 SLAKE/Med-CMR；冻结更准确的 M2a 权重并切换到 A1 multi-view Agent family |
 | 2026-09-02 | 修复 semantic MCQ invalid 聚合 | scorer 只识别字面量 `invalid`，漏计 `invalid_option_text`；正确率一直按 `parsed_answer=None` 计错 | commit `a5ddf38` 按空解析计 invalid；保留旧 metrics，重算只改变 invalid 字段与文件哈希 |
 | 2026-09-02 | A1 四视图 semantic consensus Agent 启动 | controller 通过 65 tests；shift-2/shift-3 smoke 均 8/8 completed/parseable，且不读取正确率 | 仅补跑缺失的两个 512 views；复用 hash-frozen M2a original/rotate-1，完成后才执行 conjunctive gate |
+| 2026-09-02 | A1 四视图 Agent 完成并归档 | 58.0078% 与 B0 相同，较 M2a `-4.8828` 且 CI `[-8.3984,-1.5625]`；invalid 降至 4、顺序不变量通过，但成本为 4 calls/question | shifts 2/3 的 45.1172/45.7031% 弱视图拖累 majority vote；禁止按已见结果挑 view，PMC-512 对该家族转为 analysis-only |
 
 ## 7. External Development Gate Contract
 

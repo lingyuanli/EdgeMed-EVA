@@ -1,6 +1,6 @@
 # A1 Semantic Option-Order Consensus Agent
 
-Status: `operational smoke passed / full shift-2 running`
+Status: `completed / operational checks passed / accuracy gate failed / archived`
 
 Parent weights: frozen M2a seed-20260903 adapter
 
@@ -35,3 +35,9 @@ Failure archives A1. The four-view cost must be reported alongside accuracy; a s
 ## Live execution receipt
 
 The shift-2 and shift-3 operational smokes each completed 8/8 with 8/8 `option_text_match` outputs. Correctness was not inspected. The full shift-2 run then launched automatically in remote tmux session `a1-semantic-consensus` from code commit `9699b67056ed56a1df2ec65b13d22cf8b98a92ce`; its first verified checkpoint contained 45/512 durable predictions. The full gate remains pending.
+
+## Frozen result
+
+Both missing views completed 512/512 and the campaign exited zero. A1 accuracy was 58.0078% (297/512): exactly B0 accuracy, delta `0.0000` with interval `[-4.6875, 4.6875]`, and `-4.8828` points below M2a with interval `[-8.3984, -1.5625]`. A1 reduced invalid outputs from M2a's 10 to four and passed view-argument-order invariance, but failed both accuracy gates at four model calls per question.
+
+Post-gate scoring of already generated views found accuracies 62.8906%, 60.1563%, 45.1172%, and 45.7031% for shifts 0–3. The two weak views explain why unweighted consensus regressed. A1 is archived; selecting favorable views after seeing these results is prohibited. PMC-512 becomes analysis-only for this family, and any calibrated A2 policy requires a new source-diverse MCQ calibration/validation split.
