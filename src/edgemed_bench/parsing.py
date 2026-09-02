@@ -11,6 +11,7 @@ LEADING_OPTION = re.compile(r"(?i)^\s*[\(\[]?([A-E])[\)\].:\-]\s*")
 LETTER_LINE = re.compile(r"(?im)^\s*[\(\[]?([A-E])[\)\]]?\s*[\.!]?\s*$")
 OPEN_REASONING = re.compile(r"(?is)\breasoning\s*:\s*(.*?)(?=\n\s*answer\s*:)")
 OPEN_ANSWER = re.compile(r"(?is)\banswer\s*:\s*(.+?)\s*$")
+OPTION_TEXT_LABEL = re.compile(r"(?is)^\s*([A-E])\s*[\)\].:\-]\s*(.+?)\s*$")
 
 
 def parse_mcq(text: str) -> tuple[str | None, str]:
@@ -43,6 +44,13 @@ def parse_option_text_mcq(
     answer_match = OPEN_ANSWER.search(stripped)
     candidate = answer_match.group(1).strip() if answer_match else stripped
     if not candidate or len([line for line in candidate.splitlines() if line.strip()]) != 1:
+        return None, "invalid_option_text"
+    labelled = OPTION_TEXT_LABEL.match(candidate)
+    if labelled:
+        letter = labelled.group(1).upper()
+        option = options.get(letter)
+        if option is not None and _normalize_option_text(labelled.group(2)) == _normalize_option_text(option):
+            return letter, "option_label_text_match"
         return None, "invalid_option_text"
     normalized = _normalize_option_text(candidate)
     matches = [

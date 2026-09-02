@@ -88,6 +88,14 @@ def test_semantic_option_prompt_and_parser_use_visible_option_text() -> None:
         "B",
         "option_text_match",
     )
+    assert parse_option_text_mcq("Answer: B) Right upper lobe", options) == (
+        "B",
+        "option_label_text_match",
+    )
+    assert parse_option_text_mcq("Answer: A) Right upper lobe", options) == (
+        None,
+        "invalid_option_text",
+    )
     assert parse_option_text_mcq("B", options) == (None, "invalid_option_text")
     duplicate = {"A": "same", "B": "same", "C": "other", "D": "last"}
     assert parse_option_text_mcq("same", duplicate) == (None, "invalid_option_text")

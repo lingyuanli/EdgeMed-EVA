@@ -16,6 +16,8 @@ The model, source rows, seed, order, image budget, QLoRA layers/rank/alpha/dropo
 
 At inference, `semantic_option` asks for the complete text of one visible option. The parser normalizes the generated string and visible option strings and accepts only a unique exact match. It maps that visible content back to a letter for the existing scorer. It never reads the reference answer.
 
+The B0 preflight additionally exposed `Answer: D) <exact option text>`. Parser v2 accepts this only when the stated label and following text identify the same visible option; a label alone or a mismatched label/text pair remains invalid. The partial parser-v1 run stopped after 66 rows and was preserved with predictions SHA-256 `bdaf1a0…68c20`. The completed 128-step adapter is reused; training is not repeated.
+
 ## Gates
 
 1. Two-step V100 smoke: finite loss/gradients, two applied optimizer steps, adapter hashes, peak memory, and 4-row reload inference.

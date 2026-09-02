@@ -63,6 +63,9 @@
 - [x] M2a two-step finite/save/reload smoke passed on V100; 2 applied steps, finite loss, 4/4 option-text reload parses
 - [x] M2a seed3/128 pilot and original/rotated same-prompt B0 control script frozen
 - [x] M2a seed3/128 pilot launched in tmux from remote commit `66f89c3`
+- [x] M2a 128-step training completed finite; evaluation stopped at 66 B0 rows after answer-blind parser-v1 mismatch, partial artifact preserved
+- [x] parser-v2 requires label and copied content to agree; label-only remains invalid; retraining prohibited
+- [ ] M2a parser-v2 B0/M2a 32-row operational smoke passed
 - [ ] M2a seed3/128 original/rotated pilot completed
 
 ## Smoke Queue

@@ -18,28 +18,34 @@ original_pair="${repo_root}/runs/pmc-semantic-option-original-b0-vs-m2a-s${seed}
 rotated_pair="${repo_root}/runs/pmc-semantic-option-rotate1-b0-vs-m2a-s${seed}.json"
 invariance_pair="${repo_root}/runs/pmc-semantic-option-invariance-b0-vs-m2a-s${seed}.json"
 gate_receipt="${repo_root}/runs/pmc-m2a-optiontext-pilot128-gate-s${seed}.json"
+skip_train="${EDGEMED_SKIP_TRAIN:-0}"
 
 cd "${repo_root}"
-for path in "${train_run}" "${b0_original}" "${b0_rotated}" "${m2a_original}" "${m2a_rotated}"; do
+for path in "${b0_original}" "${b0_rotated}" "${m2a_original}" "${m2a_rotated}"; do
   test ! -e "${path}"
 done
 
-PYTHONPATH=src .venv/bin/python -m edgemed_bench.train_qlora \
-  --manifest "${train_surface}/inference.jsonl" \
-  --references "${train_surface}/references.jsonl" \
-  --data-root "${data_base}/extracted/figures" \
-  --model-path "${model_path}" \
-  --model-source-manifest "${model_receipt}" \
-  --run-dir "${train_run}" \
-  --target-mode option_text \
-  --max-steps 128 \
-  --gradient-accumulation 2 \
-  --learning-rate 1e-4 \
-  --lora-rank 16 \
-  --lora-alpha 32 \
-  --max-image-pixels 786432 \
-  --grad-scaler-init-scale 1 \
-  --seed "${seed}"
+if [[ "${skip_train}" == "1" ]]; then
+  test "$(.venv/bin/python -c 'import json,sys; print(json.load(open(sys.argv[1]))["status"])' "${train_run}/run_manifest.json")" = completed
+else
+  test ! -e "${train_run}"
+  PYTHONPATH=src .venv/bin/python -m edgemed_bench.train_qlora \
+    --manifest "${train_surface}/inference.jsonl" \
+    --references "${train_surface}/references.jsonl" \
+    --data-root "${data_base}/extracted/figures" \
+    --model-path "${model_path}" \
+    --model-source-manifest "${model_receipt}" \
+    --run-dir "${train_run}" \
+    --target-mode option_text \
+    --max-steps 128 \
+    --gradient-accumulation 2 \
+    --learning-rate 1e-4 \
+    --lora-rank 16 \
+    --lora-alpha 32 \
+    --max-image-pixels 786432 \
+    --grad-scaler-init-scale 1 \
+    --seed "${seed}"
+fi
 
 run_eval() {
   local manifest="$1"
