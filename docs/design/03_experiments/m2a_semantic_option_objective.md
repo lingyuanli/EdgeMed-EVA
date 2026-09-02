@@ -1,6 +1,6 @@
 # M2a Semantic Option-Content Objective
 
-Status: `128-step training complete / parser-v2 evaluation running`
+Status: `completed / accuracy gates passed / invariance gate inconclusive / not promoted`
 Parent: B0 model and M1a training recipe, not M1a weights
 
 ## Confirmed cause addressed
@@ -44,3 +44,11 @@ Failure at gates 2–4 archives plain semantic targets and promotes deterministi
 - code commit: `7705ee6b0cbe2cefc06a79cc6a81d9c245e4b020`
 
 The full 128-step training completed with finite mean loss `0.183526`, last loss `0.147254`, and peak CUDA allocation `8475.42 MiB`. Its evaluation was restarted under parser v2 without retraining.
+
+## Frozen pilot result
+
+All original/rotated B0 and M2a runs completed 512/512 with zero invalid parses. M2a improved original-order accuracy by `+4.8828` points (95% CI `[0.7813, 8.9893]`, `p=0.0261`) and rotated-order accuracy by `+4.4922` points (95% CI `[0.5859, 8.3984]`, `p=0.0346`). This is a substantial repair over M1a's rotation-sensitive result.
+
+Content consistency was 70.5078% for B0 and 72.2656% for M2a. The paired delta was `+1.7578` points, but its interval `[-3.1250, 6.6406]` did not establish the preregistered -1 point non-inferiority margin. Because the gate was conjunctive, the overall receipt is `failed`; this means evidence is insufficient for promotion, not that the accuracy repair failed.
+
+M2a does not proceed to SLAKE or Med-CMR. The next isolated change is M2b deterministic training-only option-order augmentation. Full receipts and hashes are archived under `baselines/local/qwen35-4b-medcmr-m2a/attempts/`.

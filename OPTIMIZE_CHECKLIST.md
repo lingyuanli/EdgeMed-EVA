@@ -8,7 +8,7 @@
 - primary optimize submode: `train`
 - incumbent: `qwen35-4b-medcmr-b0`, verified MCQ accuracy `27.1690%`
 - promoted line: none; zero-shot B1 failed the frozen external-development comparison
-- active implementation candidate: `transfer-failure-20260902`, source-diverse retention and label-invariance diagnostics
+- active implementation candidate: `m2b-order-augmented-semantic-sft`, deterministic training-only option-order augmentation
 - full-eval queue: empty; Med-CMR test scoring is prohibited until the candidate and evaluation budget are frozen
 
 ## Control Checks
@@ -67,7 +67,10 @@
 - [x] parser-v2 requires label and copied content to agree; label-only remains invalid; retraining prohibited
 - [x] M2a parser-v2 B0/M2a operational smoke passed at 30/32 and 31/32; label-only remains invalid
 - [x] completed 128-step adapter reused without retraining; parser-v2 four-run evaluation launched
-- [ ] M2a seed3/128 original/rotated pilot completed
+- [x] M2a seed3/128 original/rotated pilot completed: original +4.8828 points and rotated +4.4922, both paired intervals wholly positive
+- [x] M2a strict promotion gate stopped at consistency non-inferiority: point delta +1.7578, but 95% CI lower bound -3.1250 is below the frozen -1 margin
+- [x] M2a withheld from SLAKE and Med-CMR; no per-sample tuning or extra M2a seed authorized
+- [ ] M2b deterministic training-only option-order augmentation implemented and audited
 
 ## Smoke Queue
 
@@ -85,4 +88,4 @@
 
 ## Next Concrete Action
 
-Implement M2a semantic option-content SFT as the smallest objective change. Require original-order gain, rotated-order non-inferiority, and SLAKE retention before any new milestone. Do not reopen Med-CMR.
+Implement M2b as one additional variable over M2a: deterministic training-only option-order augmentation. Reuse frozen B0 semantic evaluations; require original-order gain, rotated-order non-inferiority, consistency non-inferiority, then SLAKE retention. Do not reopen Med-CMR.
