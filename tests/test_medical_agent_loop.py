@@ -64,10 +64,15 @@ def test_scorer_keeps_structure_answer_evidence_and_causality_separate() -> None
         "trace_id": "s1:T1", "sample_id": "s1", "status": "completed",
         "tool_name": "region_inspect",
         "request": {"media_id": "m1", "region_xyxy_1000": [100, 100, 500, 500]},
+        "selected_frames": [{"media_id": "m1"}],
     }]
     output = {
         "sample_id": "s1", "hypotheses": [],
-        "evidence": [{"evidence_id": "E1", "media_id": "m1", "region_xyxy_1000": [100, 100, 500, 500], "observation": "visible fixture"}],
+        "evidence": [{
+            "evidence_id": "E1", "media_id": "m1", "view_or_time": "current",
+            "region_xyxy_1000": [100, 100, 500, 500], "observation": "visible fixture",
+            "acquisition": "region_inspect", "confidence": 0.9, "supports": [], "contradicts": [],
+        }],
         "answer": "A", "answer_evidence_ids": ["E1"], "confidence": 0.9,
         "insufficient_evidence": False, "tool_trace_ids": ["s1:T1"],
     }

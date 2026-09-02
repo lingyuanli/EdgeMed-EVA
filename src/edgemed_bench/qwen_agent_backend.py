@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -11,6 +12,25 @@ from PIL import Image
 
 from .io import sha256_file
 from .run import resize_to_pixel_budget
+
+
+DECISION_CONTRACT = """Choose the next evidence action for this medical benchmark case.
+Return exactly one JSON object and no Markdown. Use one of these forms:
+{"content":"brief evidence gap","tool_call":{"name":"enabled tool","arguments":{}}}
+{"content":"evidence is sufficient","tool_call":null}
+The first decision must acquire visual evidence. Never call a tool outside ENABLED_TOOLS.
+For single-image media, do not call temporal_skim. A repeated request is invalid."""
+
+FINAL_CONTRACT = """Produce the final evidence-grounded answer as exactly one JSON object and
+no Markdown. Copy every key and value type from OUTPUT_SCHEMA. In particular:
+- use `evidence_id`, never `id`, for evidence items;
+- use `label` and `status` in every hypothesis;
+- `supports` and `contradicts` must be JSON arrays of hypothesis IDs;
+- `acquisition` must be exactly inspect_overview, temporal_skim, or region_inspect;
+- cite only completed trace IDs copied exactly from TOOL_RESULT;
+- for MCQ, `answer` must be one visible option letter;
+- observations describe visible pixels, not tool metadata or an unsupported diagnosis.
+Use null for region_xyxy_1000 only when the cited acquisition is a non-region overview."""
 
 
 def parse_json_object(text: str) -> dict[str, Any]:
@@ -108,6 +128,13 @@ class Qwen35MedicalAgentBackend:
         self.model.eval()
         self.receipt = {
             "backend": "qwen35-medical-agent/v1",
+            "prompt_contract_sha256": hashlib.sha256(
+                json.dumps(
+                    {"decision": DECISION_CONTRACT, "final": FINAL_CONTRACT},
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode()
+            ).hexdigest(),
             "model_path": str(self.model_path),
             "model_source": source,
             "load_seconds": time.perf_counter() - load_started,
@@ -211,13 +238,9 @@ class Qwen35MedicalAgentBackend:
                 image.close()
 
     def decide(self, messages: list[dict[str, Any]], tools: dict[str, Any]) -> dict[str, Any]:
-        instruction = """Choose the next evidence action for this medical benchmark case.
-Return exactly one JSON object and no Markdown. Use one of these forms:
-{"content":"brief evidence gap","tool_call":{"name":"enabled tool","arguments":{}}}
-{"content":"evidence is sufficient","tool_call":null}
-The first decision must acquire visual evidence. Never call a tool outside ENABLED_TOOLS.
-For single-image media, do not call temporal_skim. A repeated request is invalid.
-ENABLED_TOOLS=""" + json.dumps(tools, ensure_ascii=False, sort_keys=True)
+        instruction = DECISION_CONTRACT + "\nENABLED_TOOLS=" + json.dumps(
+            tools, ensure_ascii=False, sort_keys=True
+        )
         parsed, call = self._generate(
             messages, instruction, self.decision_max_new_tokens, "decision"
         )
@@ -229,13 +252,9 @@ ENABLED_TOOLS=""" + json.dumps(tools, ensure_ascii=False, sort_keys=True)
     def finalize(
         self, messages: list[dict[str, Any]], output_schema: dict[str, Any]
     ) -> dict[str, Any]:
-        instruction = """Produce the final evidence-grounded answer. Return exactly one JSON object
-and no Markdown. Required fields are sample_id, hypotheses, evidence, answer,
-answer_evidence_ids, confidence, insufficient_evidence, and tool_trace_ids. For MCQ,
-answer must be one visible option letter. Every evidence item needs evidence_id, media_id,
-observation, acquisition, confidence, supports, contradicts, and region_xyxy_1000 (null is
-allowed for overview evidence). Cite only completed tool trace IDs. Do not treat tool metadata
-as a diagnosis. OUTPUT_SCHEMA=""" + json.dumps(output_schema, sort_keys=True)
+        instruction = FINAL_CONTRACT + "\nOUTPUT_SCHEMA=" + json.dumps(
+            output_schema, ensure_ascii=False, sort_keys=True
+        )
         parsed, call = self._generate(messages, instruction, self.final_max_new_tokens, "final")
         parsed["_model_call"] = call
         return parsed

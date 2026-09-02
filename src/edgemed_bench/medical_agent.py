@@ -32,16 +32,29 @@ class AgentRunResult:
 
 
 FINAL_SCHEMA = {
-    "required": [
-        "sample_id",
-        "hypotheses",
-        "evidence",
-        "answer",
-        "answer_evidence_ids",
-        "confidence",
-        "insufficient_evidence",
-        "tool_trace_ids",
-    ]
+    "sample_id": "exact sample id from CASE",
+    "hypotheses": [
+        {"id": "H1", "label": "short hypothesis", "status": "supported|refuted|uncertain"}
+    ],
+    "evidence": [
+        {
+            "evidence_id": "E1",
+            "media_id": "exact media id from CASE",
+            "view_or_time": "view name or timestamp",
+            "region_xyxy_1000": [0, 0, 1000, 1000],
+            "observation": "visible pixels only",
+            "supports": ["H1"],
+            "contradicts": [],
+            "acquisition": "inspect_overview|temporal_skim|region_inspect",
+            "confidence": 0.5,
+        }
+    ],
+    "answer": "one visible MCQ option letter, or null for an open question",
+    "answer_text": "concise answer text",
+    "answer_evidence_ids": ["E1"],
+    "confidence": 0.5,
+    "insufficient_evidence": False,
+    "tool_trace_ids": ["exact completed trace id from TOOL_RESULT"],
 }
 
 

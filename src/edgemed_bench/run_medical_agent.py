@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from .io import append_jsonl, read_jsonl, reject_reference_fields, sha256_file, write_json
-from .medical_agent import AgentBackend, run_medical_agent
+from .medical_agent import AgentBackend, FINAL_SCHEMA, run_medical_agent
 from .medical_agent_tools import TOOL_SCHEMAS
 from .run import git_commit, select_rows
 
@@ -347,6 +347,11 @@ def main() -> None:
         "data_root": str(args.data_root.resolve()),
         "model_source_manifest_sha256": sha256_file(args.model_source_manifest),
         "backend": backend.receipt["backend"],
+        "prompt_contract_sha256": backend.receipt.get("prompt_contract_sha256", "test-or-external"),
+        "final_schema_sha256": _canonical_hash(FINAL_SCHEMA),
+        "tool_schemas_sha256": _canonical_hash(
+            {name: TOOL_SCHEMAS[name] for name in args.tools}
+        ),
         "generation": backend.receipt["generation"],
         "allowed_tools": list(args.tools),
         "max_steps": args.max_steps,

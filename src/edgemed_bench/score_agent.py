@@ -61,6 +61,7 @@ def _schema_valid(
         return False, False, False
     evidence_ids = [item.get("evidence_id") for item in evidence if isinstance(item, dict)]
     citation_ok = len(evidence_ids) == len(evidence) == len(set(evidence_ids))
+    citation_ok = citation_ok and all(isinstance(item, str) and item for item in evidence_ids)
     citation_ok = citation_ok and bool(output.get("answer_evidence_ids"))
     citation_ok = citation_ok and set(output.get("answer_evidence_ids", [])) <= set(evidence_ids)
     media_ids = {str(item["media_id"]) for item in sample["media"]}
@@ -79,26 +80,58 @@ def _schema_valid(
         )
     )
     bound_traces = [traces[trace_id] for trace_id in trace_ids if trace_id in traces]
+    hypotheses = output.get("hypotheses") if isinstance(output.get("hypotheses"), list) else []
+    hypothesis_ids = {
+        item.get("id") for item in hypotheses if isinstance(item, dict) and isinstance(item.get("id"), str)
+    }
+    hypotheses_ok = len(hypothesis_ids) == len(hypotheses) and all(
+        isinstance(item, dict)
+        and isinstance(item.get("id"), str)
+        and bool(item.get("id"))
+        and isinstance(item.get("label"), str)
+        and bool(item.get("label").strip())
+        and item.get("status") in {"supported", "refuted", "uncertain"}
+        for item in hypotheses
+    )
 
     def evidence_item_valid(item: Any) -> bool:
         if not isinstance(item, dict) or item.get("media_id") not in media_ids:
             return False
         if not str(item.get("observation", "")).strip():
             return False
+        if not isinstance(item.get("view_or_time"), str) or not item["view_or_time"].strip():
+            return False
+        if item.get("acquisition") not in {"inspect_overview", "temporal_skim", "region_inspect"}:
+            return False
+        if not isinstance(item.get("confidence"), (int, float)) or isinstance(item.get("confidence"), bool):
+            return False
+        if not 0 <= float(item["confidence"]) <= 1:
+            return False
+        for relation in ("supports", "contradicts"):
+            if not isinstance(item.get(relation), list) or not set(item[relation]) <= hypothesis_ids:
+                return False
         box = item.get("region_xyxy_1000")
         if box is not None and not _valid_box(box):
             return False
+        compatible = [
+            trace for trace in bound_traces
+            if trace.get("tool_name") == item.get("acquisition")
+            and any(
+                frame.get("media_id") == item.get("media_id")
+                for frame in trace.get("selected_frames", [])
+                if isinstance(frame, dict)
+            )
+        ]
         if box is None:
-            return any(trace.get("status") == "completed" for trace in bound_traces)
+            return item.get("acquisition") != "region_inspect" and bool(compatible)
         return any(
-            trace.get("tool_name") == "region_inspect"
-            and trace.get("request", {}).get("media_id") == item.get("media_id")
+            trace.get("request", {}).get("media_id") == item.get("media_id")
             and trace.get("request", {}).get("region_xyxy_1000") == box
-            for trace in bound_traces
+            for trace in compatible
         )
 
     evidence_ok = all(evidence_item_valid(item) for item in evidence)
-    return bool(schema_ok and citation_ok and evidence_ok and trace_ok), bool(citation_ok), bool(trace_ok)
+    return bool(schema_ok and hypotheses_ok and citation_ok and evidence_ok and trace_ok), bool(citation_ok), bool(trace_ok)
 
 
 def score_agent_rows(

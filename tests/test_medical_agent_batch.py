@@ -35,6 +35,7 @@ class FakeBackend:
             "evidence": [{
                 "evidence_id": "E1",
                 "media_id": sample["media"][0]["media_id"],
+                "view_or_time": "overview",
                 "region_xyxy_1000": None,
                 "observation": "A synthetic fixture image is visible.",
                 "acquisition": "inspect_overview",
