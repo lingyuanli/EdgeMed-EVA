@@ -55,7 +55,9 @@
 - [x] 至少一个成功视觉产物才能 final，decision 与 finalizer 调用已分离
 - [x] inference manifest 硬拒绝 reference 字段；scorer-only reference access 已测试
 - [x] E0/E1/E2/E3 分层 scorer 与哈希/复算 verifier 已实现
-- [x] synthetic artifact closure 六项 verifier 检查 PASS；全仓 71 tests 通过
+- [x] synthetic closure fresh audit 暴露并修复 `region_inspect` 哈希错误与 verifier 无质量门问题
+- [x] run manifest 显式声明 E0 最低阈值和最大失败工具数；缺失质量门时 verifier BLOCK
+- [x] repaired synthetic artifact closure 七项 verifier 检查 PASS；原 false-pass 形状被回归测试拒绝；全仓 73 tests 通过
 - [ ] Qwen3.5-4B backend adapter 与可恢复 batch runner 完成
 - [ ] 单 V100、≤16 条 answer-blind real-model operational smoke 完成
 - [ ] source-diverse 开发集上的 no-tool/tool/forced/oracle/compute-matched 对照完成

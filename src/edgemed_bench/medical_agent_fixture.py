@@ -146,6 +146,14 @@ def run_fixture(output_dir: Path) -> dict[str, Any]:
             "status": "completed",
             "scientific_result": False,
             "backend": "deterministic_fixture",
+            "quality_gates": {
+                "metric_minimums": {
+                    "e0_structure.schema_valid_rate": 1.0,
+                    "e0_structure.citation_valid_rate": 1.0,
+                    "e0_structure.tool_trace_bound_rate": 1.0,
+                },
+                "max_failed_tool_calls": 0,
+            },
             "source_hashes": {
                 "inference_manifest_sha256": sha256_file(inference_path),
                 "references_sha256": sha256_file(references_path),

@@ -1,6 +1,6 @@
 # 医疗多模态 Agent M0：工具与评测闭环
 
-状态：`M0 IMPLEMENTED / SYNTHETIC CLOSURE PASS / REAL MODEL DEFERRED`
+状态：`M0 IMPLEMENTED / REPAIRED SYNTHETIC CLOSURE PASS / REAL MODEL DEFERRED`
 
 日期：2026-09-02
 
@@ -154,6 +154,10 @@ runs/<run_id>/
 
 虽然 reference 与运行产物可为归档目的位于同一 run 目录，但 Agent runner 的函数签名没有 reference 参数；references 只在推理完成后传给 scorer。正式冻结测试可进一步将 reference 保存在 evaluator-only 目录，接口无需改变。
 
+### 6.3 声明式质量门
+
+“指标能够复算”只证明复现性，不证明指标达到准入条件。每个 Agent run manifest 因此必须声明 `quality_gates`：需要达到的 dotted metric 最低值，以及允许的最大失败工具调用数。verifier 对缺失、未知或未通过的门返回 `BLOCK`。M0 synthetic closure 固定要求三个 E0 rate 均为 1.0、失败工具数为 0；后续 real-model smoke 和正式评测可以预注册不同阈值，但不能在看到结果后修改。
+
 ## 7. 已执行的 M0 证据
 
 执行命令：
@@ -166,11 +170,14 @@ PYTHONPATH=src /Users/xxxiaoling/miniforge3/bin/python \
 
 fixture 由三张合成帧、脚本化 backend 和一个完全匹配的 reference 框组成，只检验管线。实际结果：
 
-- 6 个新增 focused tests 通过；
-- 全仓 71 tests 通过；
-- verifier 六项检查均为 `PASS`；
+- 8 个 focused tests 通过；
+- 全仓 73 tests 通过；
+- fresh run 三个工具调用均为 `completed`，三个 E0 rate 均为 1.0；
+- verifier 七项检查均为 `PASS`，其中包含声明式质量门；
 - E3 causal 与 medical correctness 明确为 `DEFER`；
 - fixture 的 1.0 accuracy/IoU 是构造值，不是模型结果。
+
+初次实现曾因 `region_inspect` 从未绑定的原始 frame 读取 `sha256` 而产生失败 trace；旧 verifier 仍因指标可复算而给出 `PASS`。fresh audit 保留该负面证据并采用单点修复：从已完成哈希绑定的 selected frame 读取值，同时增加声明式质量门和直接 E0 断言。没有通过修改 fixture 答案或绕过失败 trace 获得 PASS。
 
 临时 smoke 产物不提交到仓库；可用上述命令随时重建。
 

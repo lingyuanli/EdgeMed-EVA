@@ -15,6 +15,50 @@ def _check(name: str, passed: bool, **evidence: Any) -> dict[str, Any]:
     return {"name": name, "status": "PASS" if passed else "BLOCK", **evidence}
 
 
+def _metric_at_path(metrics: dict[str, Any], dotted_path: str) -> Any:
+    value: Any = metrics
+    for part in dotted_path.split("."):
+        if not isinstance(value, dict) or part not in value:
+            raise KeyError(dotted_path)
+        value = value[part]
+    return value
+
+
+def _evaluate_quality_gates(
+    metrics: dict[str, Any], traces: list[dict[str, Any]], gates: Any
+) -> tuple[bool, list[dict[str, Any]]]:
+    failures: list[dict[str, Any]] = []
+    if not isinstance(gates, dict):
+        return False, [{"gate": "quality_gates", "error": "missing_or_not_an_object"}]
+    unknown = set(gates) - {"metric_minimums", "max_failed_tool_calls"}
+    if unknown:
+        failures.append({"gate": "quality_gates", "error": f"unknown_fields:{sorted(unknown)}"})
+    minimums = gates.get("metric_minimums")
+    if not isinstance(minimums, dict) or not minimums:
+        failures.append({"gate": "metric_minimums", "error": "missing_or_empty"})
+    else:
+        for path, threshold in minimums.items():
+            try:
+                actual = _metric_at_path(metrics, str(path))
+                passed = isinstance(actual, (int, float)) and not isinstance(actual, bool)
+                passed = passed and float(actual) >= float(threshold)
+            except (KeyError, TypeError, ValueError) as exc:
+                failures.append({"gate": path, "error": f"{type(exc).__name__}: {exc}"})
+                continue
+            if not passed:
+                failures.append({"gate": path, "minimum": threshold, "actual": actual})
+    maximum_failed = gates.get("max_failed_tool_calls")
+    if not isinstance(maximum_failed, int) or isinstance(maximum_failed, bool) or maximum_failed < 0:
+        failures.append({"gate": "max_failed_tool_calls", "error": "missing_or_invalid"})
+    else:
+        failed_count = sum(trace.get("status") != "completed" for trace in traces)
+        if failed_count > maximum_failed:
+            failures.append(
+                {"gate": "max_failed_tool_calls", "maximum": maximum_failed, "actual": failed_count}
+            )
+    return not failures, failures
+
+
 def verify_agent_run(run_dir: Path) -> dict[str, Any]:
     run_dir = run_dir.resolve()
     required = {
@@ -96,6 +140,17 @@ def verify_agent_run(run_dir: Path) -> dict[str, Any]:
         recompute_ok = False
         recompute_error = f"{type(exc).__name__}: {exc}"
     checks.append(_check("metric_recompute", recompute_ok, error=recompute_error))
+    quality_ok, quality_failures = _evaluate_quality_gates(
+        metrics, traces, manifest.get("quality_gates")
+    )
+    checks.append(
+        _check(
+            "declared_quality_gates",
+            quality_ok,
+            gates=manifest.get("quality_gates"),
+            failures=quality_failures,
+        )
+    )
     overall = "PASS" if all(item["status"] == "PASS" for item in checks) else "BLOCK"
     return {
         "schema_version": "edgemed-medical-agent-verification/v1",

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -7,6 +8,7 @@ from edgemed_bench.medical_agent import run_medical_agent
 from edgemed_bench.medical_agent_fixture import FixtureBackend, run_fixture
 from edgemed_bench.medical_agent_tools import MedicalToolExecutor
 from edgemed_bench.score_agent import score_agent_rows
+from edgemed_bench.verify_agent_run import _evaluate_quality_gates, verify_agent_run
 
 
 def _sample(tmp_path: Path) -> dict:
@@ -95,6 +97,54 @@ def test_malformed_prediction_is_scored_invalid_instead_of_crashing() -> None:
 
 
 def test_complete_synthetic_fixture_verifies(tmp_path: Path) -> None:
-    report = run_fixture(tmp_path / "run")
+    run_dir = tmp_path / "run"
+    report = run_fixture(run_dir)
     assert report["overall"] == "PASS"
     assert all(item["status"] == "PASS" for item in report["checks"])
+    metrics = json.loads((run_dir / "metrics.json").read_text())
+    assert metrics["e0_structure"] == {
+        "citation_valid_rate": 1.0,
+        "schema_valid_rate": 1.0,
+        "tool_trace_bound_rate": 1.0,
+    }
+    traces = [json.loads(line) for line in (run_dir / "tool_traces.jsonl").read_text().splitlines()]
+    assert len(traces) == 3
+    assert all(trace["status"] == "completed" for trace in traces)
+
+
+def test_verifier_blocks_when_run_does_not_declare_quality_gates(tmp_path: Path) -> None:
+    run_dir = tmp_path / "run"
+    assert run_fixture(run_dir)["overall"] == "PASS"
+    manifest_path = run_dir / "run_manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest.pop("quality_gates")
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    report = verify_agent_run(run_dir)
+    checks = {item["name"]: item["status"] for item in report["checks"]}
+    assert checks["declared_quality_gates"] == "BLOCK"
+    assert report["overall"] == "BLOCK"
+
+
+def test_quality_gate_rejects_the_original_false_pass_shape() -> None:
+    metrics = {
+        "e0_structure": {
+            "schema_valid_rate": 0.0,
+            "citation_valid_rate": 1.0,
+            "tool_trace_bound_rate": 0.0,
+        }
+    }
+    gates = {
+        "metric_minimums": {
+            "e0_structure.schema_valid_rate": 1.0,
+            "e0_structure.citation_valid_rate": 1.0,
+            "e0_structure.tool_trace_bound_rate": 1.0,
+        },
+        "max_failed_tool_calls": 0,
+    }
+    passed, failures = _evaluate_quality_gates(metrics, [{"status": "failed"}], gates)
+    assert not passed
+    assert {failure["gate"] for failure in failures} == {
+        "e0_structure.schema_valid_rate",
+        "e0_structure.tool_trace_bound_rate",
+        "max_failed_tool_calls",
+    }

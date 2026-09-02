@@ -296,7 +296,7 @@ class MedicalToolExecutor:
                     "media_id": media_id,
                     "frame_index": frame["frame_index"],
                     "timestamp": frame["timestamp"],
-                    "source_sha256": frame["sha256"],
+                    "source_sha256": selected[0]["sha256"],
                 }
             ],
             "region_xyxy_1000": [x1, y1, x2, y2],
