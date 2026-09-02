@@ -2,7 +2,7 @@
 
 Campaign ID: `transfer-failure-20260902`  
 Parent: frozen `m1a-answer-qlora` seed `20260903`, 128 steps  
-Campaign status: `preregistered / slice A ready`
+Campaign status: `slice A running / slice B implementation ready`
 
 ## 1. Boundary and question
 
@@ -36,6 +36,7 @@ These are candidate explanations, not conclusions. Aggregate Med-CMR results alo
 - Transform: one deterministic cyclic option rotation, with reference letters remapped to preserve answer content.
 - Metrics: rotated accuracy, original-versus-rotated content consistency, and B0-versus-M1a paired difference.
 - Stop rule: if M1a loses its original gain or its content consistency is materially below B0, do not add more answer-letter SFT; move to option-text/semantic objectives.
+- Frozen implementation: `scripts/run-pmc-choice-rotation.sh`; the transform records the old-to-new label mapping without exposing the reference answer to inference.
 
 ### Slice C — source-diverse five-choice admission (future gate)
 
@@ -65,4 +66,3 @@ cd /home/ubuntu/EdgeMed-EVA
 tmux new-session -d -s slake-m1a-retention \
   'bash scripts/run-slake-m1a-retention.sh > runs/slake-m1a-retention-20260902.log 2>&1; echo $? > runs/slake-m1a-retention-20260902.exit'
 ```
-

@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-02
-当前主阶段：`transfer-failure campaign / SLAKE retention slice ready`
+当前主阶段：`transfer-failure campaign / SLAKE retention slice running`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract

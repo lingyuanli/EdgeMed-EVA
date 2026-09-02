@@ -46,6 +46,7 @@
 - [x] frozen best-SFT Med-CMR run completed: M1a significantly regressed by -2.8100 points despite zero invalid parses
 - [x] transfer-failure campaign hypotheses, ordering, and stop rules preregistered before new GPU scoring
 - [x] SLAKE proxy scorer/paired comparison implemented with answer-type/content/modality slices
+- [x] deterministic answer-preserving option rotation and content-consistency scorer implemented
 - [ ] SLAKE B0-vs-M1a retention slice completed and hash-bound
 - [ ] PMC answer-preserving option-rotation diagnostic completed
 
