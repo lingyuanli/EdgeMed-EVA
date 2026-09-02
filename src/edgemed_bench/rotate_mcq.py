@@ -19,7 +19,10 @@ def rotate_rows(
     answers = {str(row["sample_id"]): str(row["answer"]).upper() for row in references}
     if len(answers) != len(references):
         raise ValueError("Duplicate reference sample ids")
-    if {str(row["sample_id"]) for row in manifest} != set(answers):
+    manifest_ids = {str(row["sample_id"]) for row in manifest}
+    if len(manifest_ids) != len(manifest):
+        raise ValueError("Duplicate manifest sample ids")
+    if manifest_ids != set(answers):
         raise ValueError("Manifest/reference sample ids differ")
 
     rotated_manifest: list[dict[str, Any]] = []

@@ -6,6 +6,7 @@ import hashlib
 
 
 MCQ_PROMPT_VARIANTS = ("direct", "structured_evidence", "evidence_answer_v2")
+OPEN_PROMPT_VARIANTS = ("direct", "answer_only")
 
 
 def mcq_prompt(
@@ -44,10 +45,20 @@ def mcq_prompt(
     raise ValueError(f"Unknown MCQ prompt variant: {variant}")
 
 
-def open_prompt(question: str) -> str:
-    return (
+def open_prompt(question: str, variant: str = "direct") -> str:
+    stem = (
         "Please carefully observe this medical image and answer the following question:\n\n"
         f"Question: {question}\n\n"
+    )
+    if variant == "answer_only":
+        return stem + (
+            "Return exactly one line in this format:\n"
+            "Answer: <one short sentence or a single medical term>\n"
+            "Do not include reasoning, explanation, markdown, or any other text."
+        )
+    if variant != "direct":
+        raise ValueError(f"Unknown open prompt variant: {variant}")
+    return stem + (
         "Think step by step, integrating both visual features and medical knowledge to "
         "reach your conclusion. Then provide the final answer to the question in one short "
         "sentence or a single medical term.\n\n"
@@ -65,9 +76,7 @@ def prompt_hash(kind: str, variant: str = "direct", option_letters: str = "ABCDE
             variant=variant,
         )
     elif kind == "open":
-        if variant != "direct":
-            raise ValueError("Open prompts currently support only the direct variant")
-        text = open_prompt("{question}")
+        text = open_prompt("{question}", variant=variant)
     else:
         raise ValueError(f"Unknown prompt kind: {kind}")
     return hashlib.sha256(text.encode()).hexdigest()

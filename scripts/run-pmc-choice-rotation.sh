@@ -74,3 +74,12 @@ PYTHONPATH=src .venv/bin/python -m edgemed_bench.compare_mcq \
   --output "${repo_root}/runs/pmc-vqa-dev-rotate1-direct-vs-m1a-s20260903-20260902.json" \
   --bootstrap-repetitions 10000 \
   --seed 20260902
+PYTHONPATH=src .venv/bin/python -m edgemed_bench.compare_choice_invariance \
+  --rotated-manifest "${rotated_root}/inference.jsonl" \
+  --original-a "${original_b0}" \
+  --rotated-a "${b0_run}/predictions.jsonl" \
+  --original-b "${original_m1a}" \
+  --rotated-b "${m1a_run}/predictions.jsonl" \
+  --output "${repo_root}/runs/pmc-vqa-dev-rotate1-choice-invariance-b0-vs-m1a-20260902.json" \
+  --bootstrap-repetitions 10000 \
+  --seed 20260902

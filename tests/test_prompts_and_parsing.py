@@ -23,6 +23,15 @@ def test_open_prompt_contract() -> None:
     assert "one short sentence or a single medical term" in prompt
 
 
+def test_open_answer_only_prompt_is_short_and_answer_blind() -> None:
+    prompt = open_prompt("Question?", variant="answer_only")
+    assert "Answer:" in prompt
+    assert "Reasoning:" not in prompt
+    assert "Do not include reasoning" in prompt
+    assert "ground truth" not in prompt.lower()
+    assert prompt_hash("open", "answer_only") != prompt_hash("open")
+
+
 def test_direct_prompt_hash_remains_frozen() -> None:
     assert prompt_hash("mcq") == "d8245cf6e33e209b9819935c40bea5a9a47efcd5c8469842e87afb2d18a9160a"
 

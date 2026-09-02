@@ -90,6 +90,7 @@
 | 2026-09-01 | seed3 512-step 嵌套预算研究完成 | 65.2344%，相对 direct +7.6172 点；但相对 seed3/128 为 -0.7813，CI 跨零、p=0.72 | 保留 seed3/128（66.0156%）为冻结最佳 SFT checkpoint；允许一次正式 Med-CMR MCQ milestone evaluation |
 | 2026-09-02 | 冻结 seed3/128 完成 16,655 条 Med-CMR MCQ | M1a 24.3591% vs B0 27.1690%，paired delta -2.8100，95% CI `[-3.3443,-2.2696]`，七维全部回退；但 invalid 从 773 降至 0 | M1a 正式归档为迁移失败；不得按 test 逐样本调优或重复 M1a test，转向 source-diverse transfer gate 与新机制 |
 | 2026-09-02 | 预注册 transfer-failure campaign 与 SLAKE proxy scorer | PMC dev 与训练同属 caption-derived 四选一生成族，无法证明跨源迁移；aggregate Med-CMR 结果不能定位因果 | 先做 1,053 条 SLAKE B0-vs-M1a 保留评测，再做 PMC 选项旋转；不重新访问 Med-CMR |
+| 2026-09-02 | SLAKE direct-reasoning 64-token full launch 在 51 条后停止 | answer-blind operational audit 仅 5/51 形成可解析 `Answer:`，其余在推理段截断；继续会把截断混入语义保留 | 保留失败产物与哈希；冻结 answer-only proxy prompt，先过 32 条 ≥31 parseable smoke 后再重启 full slice |
 
 ## 7. External Development Gate Contract
 

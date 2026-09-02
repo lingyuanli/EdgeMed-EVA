@@ -25,9 +25,10 @@ These are candidate explanations, not conclusions. Aggregate Med-CMR results alo
 ### Slice A — cross-source open retention (claim-critical)
 
 - Data: admitted SLAKE validation English, revision `a9083ce6c34ac3ffb17671a605962924d8a8f9e9`, 1,053 rows / 96 images.
-- Comparison: frozen B0 versus frozen M1a seed3/128 under the identical open prompt, image budget, decoding, and parser.
+- Comparison: frozen B0 versus frozen M1a seed3/128 under the identical answer-only external-retention prompt, image budget, deterministic decoding, and conservative `Answer:` parser. This prompt is frozen before reference scoring and is not the Med-CMR official open prompt.
 - Metrics: normalized exact, token F1, parse status, and predeclared `answer_type`, `base_type`, `content_type`, and `modality` slices.
 - Metric label: external retention proxy only; it is not the unavailable official Med-CMR open judge.
+- Operational gate: a 32-row answer-blind smoke must produce at least 31 parseable `Answer:` records within 32 tokens. The earlier direct-reasoning prompt at 64 tokens was stopped after 51 rows because 46 were truncated before `Answer:`; its directory and prediction hash remain preserved as a failed preflight, not an efficacy result.
 - Promotion gate: the 95% paired interval lower bound must be at least `-1.0` point for both exact and token F1. Any interval wholly below `-1.0` archives M1a as a general-retention parent.
 
 ### Slice B — answer-label invariance (diagnostic)

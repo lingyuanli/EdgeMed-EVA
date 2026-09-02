@@ -16,7 +16,13 @@ from PIL import Image
 
 from .io import append_jsonl, read_jsonl, reject_reference_fields, sha256_file, write_json
 from .parsing import parse_evidence_answer_mcq, parse_mcq, parse_open, parse_structured_mcq
-from .prompts import MCQ_PROMPT_VARIANTS, mcq_prompt, open_prompt, prompt_hash
+from .prompts import (
+    MCQ_PROMPT_VARIANTS,
+    OPEN_PROMPT_VARIANTS,
+    mcq_prompt,
+    open_prompt,
+    prompt_hash,
+)
 
 
 def utc_now() -> str:
@@ -62,9 +68,7 @@ def resize_to_pixel_budget(image: Image.Image, max_pixels: int | None) -> Image.
 def build_prompt(row: dict[str, Any], kind: str, prompt_variant: str = "direct") -> str:
     if kind == "mcq":
         return mcq_prompt(row["question"], row["options"], variant=prompt_variant)
-    if prompt_variant != "direct":
-        raise ValueError("Open prompts currently support only the direct variant")
-    return open_prompt(row["question"])
+    return open_prompt(row["question"], variant=prompt_variant)
 
 
 def completed_ids(
@@ -101,7 +105,11 @@ def main() -> None:
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--sample-id-file", type=Path)
-    parser.add_argument("--prompt-variant", choices=MCQ_PROMPT_VARIANTS, default="direct")
+    parser.add_argument(
+        "--prompt-variant",
+        choices=tuple(dict.fromkeys(MCQ_PROMPT_VARIANTS + OPEN_PROMPT_VARIANTS)),
+        default="direct",
+    )
     parser.add_argument("--max-new-tokens", type=int)
     parser.add_argument("--max-image-pixels", type=int)
     parser.add_argument("--sync-every", type=int, default=10)
@@ -138,8 +146,10 @@ def main() -> None:
     reject_reference_fields(rows)
     if any(row.get("kind") != args.kind for row in rows):
         raise ValueError("Manifest kind mismatch")
-    if args.kind != "mcq" and args.prompt_variant != "direct":
-        raise ValueError("Open prompts currently support only the direct variant")
+    if args.kind == "mcq" and args.prompt_variant not in MCQ_PROMPT_VARIANTS:
+        raise ValueError("Unsupported MCQ prompt variant")
+    if args.kind == "open" and args.prompt_variant not in OPEN_PROMPT_VARIANTS:
+        raise ValueError("Unsupported open prompt variant")
     rows = select_rows(rows, args.limit, args.sample_id_file)
     if not rows:
         raise ValueError("No rows selected")

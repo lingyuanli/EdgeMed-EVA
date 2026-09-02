@@ -34,8 +34,8 @@ if test ! -e "${direct_run}"; then
     --model-path "${model_path}" \
     --model-source-manifest "${model_receipt}" \
     --run-dir "${direct_run}" \
-    --prompt-variant direct \
-    --max-new-tokens 64 \
+    --prompt-variant answer_only \
+    --max-new-tokens 32 \
     --max-image-pixels 786432 \
     --sync-every 10
 fi
@@ -56,8 +56,8 @@ if test ! -e "${adapter_eval_run}"; then
     --adapter-path "${adapter_run}/adapter" \
     --adapter-source-manifest "${adapter_run}/run_manifest.json" \
     --run-dir "${adapter_eval_run}" \
-    --prompt-variant direct \
-    --max-new-tokens 64 \
+    --prompt-variant answer_only \
+    --max-new-tokens 32 \
     --max-image-pixels 786432 \
     --sync-every 10
 fi

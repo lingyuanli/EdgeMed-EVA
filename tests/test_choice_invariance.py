@@ -1,3 +1,4 @@
+from edgemed_bench.compare_choice_invariance import compare_invariance
 from edgemed_bench.rotate_mcq import rotate_rows
 from edgemed_bench.score_choice_invariance import score_invariance
 
@@ -32,3 +33,19 @@ def test_zero_shift_is_rejected() -> None:
         assert "must change" in str(error)
     else:
         raise AssertionError("identity rotation was accepted")
+
+
+def test_paired_invariance_comparison() -> None:
+    manifest = [{"sample_id": "1", "option_rotation": {"old_to_new": {"A": "B", "B": "C", "C": "D", "D": "A"}}}]
+    result = compare_invariance(
+        manifest,
+        [{"sample_id": "1", "parsed_answer": "A"}],
+        [{"sample_id": "1", "parsed_answer": "A"}],
+        [{"sample_id": "1", "parsed_answer": "A"}],
+        [{"sample_id": "1", "parsed_answer": "B"}],
+        repetitions=20,
+        seed=1,
+    )
+    assert result["consistency_a_percent"] == 0.0
+    assert result["consistency_b_percent"] == 100.0
+    assert result["delta_consistency_points"] == 100.0
