@@ -47,7 +47,7 @@ The full 128-step training completed with finite mean loss `0.183526`, last loss
 
 ## Frozen pilot result
 
-All original/rotated B0 and M2a runs completed 512/512 with zero invalid parses. M2a improved original-order accuracy by `+4.8828` points (95% CI `[0.7813, 8.9893]`, `p=0.0261`) and rotated-order accuracy by `+4.4922` points (95% CI `[0.5859, 8.3984]`, `p=0.0346`). This is a substantial repair over M1a's rotation-sensitive result.
+All original/rotated B0 and M2a runs completed 512/512. Corrected invalid counts are B0 `12/8` and M2a `10/7` on original/rotate-1; these rows were already scored incorrect, so accuracy is unchanged. M2a improved original-order accuracy by `+4.8828` points (95% CI `[0.7813, 8.9893]`, `p=0.0261`) and rotated-order accuracy by `+4.4922` points (95% CI `[0.5859, 8.3984]`, `p=0.0346`). This is a substantial repair over M1a's rotation-sensitive result.
 
 Content consistency was 70.5078% for B0 and 72.2656% for M2a. The paired delta was `+1.7578` points, but its interval `[-3.1250, 6.6406]` did not establish the preregistered -1 point non-inferiority margin. Because the gate was conjunctive, the overall receipt is `failed`; this means evidence is insufficient for promotion, not that the accuracy repair failed.
 

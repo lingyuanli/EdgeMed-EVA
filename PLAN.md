@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-02
-当前主阶段：`M2b deterministic training-only option-order augmentation seed3/128 running`
+当前主阶段：`A1 semantic option-order consensus Agent design`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -64,7 +64,7 @@
 ## 5. Checklist Link
 
 - checklist path：`CHECKLIST.md`。
-- next item：实现 M2b deterministic training-only option-order augmentation；复用 M2a 的语义目标和冻结 B0 semantic outputs，先过 original PMC、rotated PMC、consistency，再允许 SLAKE。Med-CMR test 保持关闭。
+- next item：预注册并实现 A1 semantic option-order consensus Agent；冻结 M2a 权重，用四个 cyclic views 的 option-content identity 做 order-independent vote。Med-CMR test 保持关闭。
 
 ## 6. Revision Log
 
@@ -98,6 +98,8 @@
 | 2026-09-02 | PMC answer-preserving rotation 完成，H2 获支持 | M1a 内容一致性 63.2813% vs B0 71.8750%，paired delta `-8.5938`，CI `[-13.2813,-4.0967]`；旋转后准确率优势仅 +1.9531 且 CI 跨零 | 停止字母 token SFT；下一单变量候选为 option-content/semantic target，必须同时通过原序、旋转、SLAKE gate |
 | 2026-09-02 | M2a semantic option-content seed3/128 完成 | 原序 `+4.8828`、轮换 `+4.4922` 且 paired CI 均为正；一致性点估计 `+1.7578`，但 CI `[-3.1250,6.6406]` 未证明 -1 point non-inferiority | 严格 gate 记为未通过，不进入 SLAKE/Med-CMR；按预注册规则只增加 deterministic training-only order augmentation，形成 M2b |
 | 2026-09-02 | M2b training-only order surface 与 V100 smoke 通过 | 256 条冻结训练选择的答案位置为 `66/71/58/61`；2/2 optimizer steps applied，finite loss，4/4 reload parse，峰值 6,903 MiB | 允许启动一次 seed3/128 M2b pilot；不重跑 B0，不进入 SLAKE/Med-CMR |
+| 2026-09-02 | M2b seed3/128 完成并归档 | consistency `+8.5938`，CI `[3.9063,13.4766]`；但原序 `-1.1719`、轮换 `-3.1250`，准确率门均失败 | 不搜索 M2b seed，不进入 SLAKE/Med-CMR；冻结更准确的 M2a 权重并切换到 A1 multi-view Agent family |
+| 2026-09-02 | 修复 semantic MCQ invalid 聚合 | scorer 只识别字面量 `invalid`，漏计 `invalid_option_text`；正确率一直按 `parsed_answer=None` 计错 | commit `a5ddf38` 按空解析计 invalid；保留旧 metrics，重算只改变 invalid 字段与文件哈希 |
 
 ## 7. External Development Gate Contract
 

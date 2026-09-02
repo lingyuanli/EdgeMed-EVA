@@ -1,6 +1,6 @@
 # M2b Deterministic Order-Augmented Semantic Objective
 
-Status: `surface gate and V100 smoke passed / 128-step pilot running`
+Status: `completed / invariance passed / accuracy gates failed / archived`
 
 Parent: M2a recipe, initialized again from the frozen B0 model
 
@@ -51,3 +51,9 @@ The V100 smoke exited zero with 2/2 optimizer steps applied, finite loss (first 
 | reload predictions | `75a1d00f6ff1205bdaeeeceab9bc10ce77a024f68fafed9307fa325803b1f15f` |
 
 The single 128-step pilot was launched in remote tmux session `m2b-orderaug-pilot128` from code commit `30ec7e0e3f6f5a013f8a7b9a0c757f73dc411577`. The launch preflight matched the frozen B0 original/rotate-1 prediction hashes and all four development-surface hashes; no B0 inference is repeated.
+
+## Frozen pilot result
+
+The run exited zero with 512/512 unique predictions on both evaluation views. M2b accuracy was 56.8359% original and 52.5391% rotate-1, respectively `-1.1719` and `-3.1250` points versus B0. Their paired intervals `[-5.4688, 3.1250]` and `[-7.4219, 0.9766]` fail the accuracy gates.
+
+Content consistency improved from B0 70.5078% to M2b 79.1016%, a significant `+8.5938` points with interval `[3.9063, 13.4766]` and exact McNemar `p=0.000736`. Thus deterministic training-order augmentation changed the intended mechanism but incurred an accuracy trade-off. The overall conjunctive gate is failed; M2b is archived without SLAKE or Med-CMR access.

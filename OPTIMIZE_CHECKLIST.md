@@ -8,7 +8,7 @@
 - primary optimize submode: `train`
 - incumbent: `qwen35-4b-medcmr-b0`, verified MCQ accuracy `27.1690%`
 - promoted line: none; zero-shot B1 failed the frozen external-development comparison
-- active implementation candidate: `m2b-order-augmented-semantic-sft`, deterministic training-only option-order augmentation
+- active implementation candidate: `a1-semantic-order-consensus`, frozen-weight multi-view Agent inference
 - full-eval queue: empty; Med-CMR test scoring is prohibited until the candidate and evaluation budget are frozen
 
 ## Control Checks
@@ -73,7 +73,10 @@
 - [x] M2b deterministic training-only option-order augmentation implemented and audited; selected A/B/C/D positions are 66/71/58/61
 - [x] M2b two-step V100 smoke passed: finite loss, 2/2 applied steps, saved adapter, 4/4 reload parses, peak 6903.48 MiB
 - [x] M2b seed3/128 pilot launched in persistent remote tmux from commit `30ec7e0`; frozen B0 outputs reused after hash checks
-- [ ] M2b seed3/128 original/rotated pilot completed
+- [x] M2b seed3/128 original/rotated pilot completed with 512/512 each and exit code zero
+- [x] M2b archived: consistency +8.5938 with wholly positive CI, but original -1.1719 and rotated -3.1250 fail accuracy gates
+- [x] semantic MCQ invalid aggregation repaired in commit `a5ddf38`; old metrics preserved, predictions/accuracy/pairs unchanged
+- [ ] A1 semantic order-consensus Agent preregistered and implemented
 
 ## Smoke Queue
 
@@ -91,4 +94,4 @@
 
 ## Next Concrete Action
 
-Implement M2b as one additional variable over M2a: deterministic training-only option-order augmentation. Reuse frozen B0 semantic evaluations; require original-order gain, rotated-order non-inferiority, consistency non-inferiority, then SLAKE retention. Do not reopen Med-CMR.
+Preregister A1 semantic order-consensus Agent over frozen M2a weights. Aggregate complete option-text predictions across all four cyclic views with an order-independent tie rule; compare against frozen B0 and M2a before any SLAKE or Med-CMR access.
