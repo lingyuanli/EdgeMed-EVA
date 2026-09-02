@@ -65,6 +65,6 @@
 - [x] best-SFT full Med-CMR MCQ milestone completed and independently scored: 24.3591%, significant -2.8100 point regression
 - [x] M1a archived without per-sample test tuning or repeated test evaluation
 - [x] M1a transfer-failure campaign and non-Med-CMR stop rules frozen
-- [ ] SLAKE source-diverse retention comparison complete
+- [x] SLAKE source-diverse retention comparison complete; M1a improved exact/F1 with paired CIs wholly positive
 - [ ] PMC option-label invariance comparison complete
 - [ ] golden validation annotation protocol frozen before model scoring

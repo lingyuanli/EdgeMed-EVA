@@ -53,7 +53,9 @@
 - [x] variant-scoped `bare_answer` parser implemented; direct Med-CMR open parsing unchanged
 - [x] SLAKE answer-only B0 and M1a operational smokes each passed 32/32; hashes frozen
 - [x] SLAKE full B0-vs-M1a retention slice launched after the operational gate
-- [ ] SLAKE B0-vs-M1a retention slice completed and hash-bound
+- [x] SLAKE B0-vs-M1a retention slice completed and hash-bound: exact +8.6420, F1 +5.5843, both paired CI lower bounds positive
+- [x] H3 general semantic forgetting weakened; broad H1 same-source-only transfer weakened
+- [x] PMC answer-preserving option-rotation diagnostic launched under frozen contract
 - [ ] PMC answer-preserving option-rotation diagnostic completed
 
 ## Smoke Queue
@@ -72,4 +74,4 @@
 
 ## Next Concrete Action
 
-Run the preregistered SLAKE B0-vs-M1a retention slice. Archive M1a as a general-retention parent if either paired proxy interval is wholly below the `-1.0` point non-inferiority margin. Med-CMR remains closed.
+Complete the active PMC option-rotation slice and compare B0/M1a content consistency and rotated accuracy. Do not reopen Med-CMR.
