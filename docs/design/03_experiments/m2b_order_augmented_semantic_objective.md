@@ -1,0 +1,35 @@
+# M2b Deterministic Order-Augmented Semantic Objective
+
+Status: `preregistered / implementation preflight`  
+Parent: M2a recipe, initialized again from the frozen B0 model  
+Seed: `20260903`
+
+## Why this is the next experiment
+
+M2a significantly improved accuracy on both original and answer-preserving rotate-1 PMC development surfaces, but its 512-row content-consistency interval did not prove the frozen -1 point non-inferiority margin. Its point estimate was positive, so the smallest causal follow-up is to retain the successful option-content target while decorrelating semantic content from fixed option positions during training.
+
+## One changed variable
+
+M2a trains on the admitted PMC option order. M2b applies one deterministic cyclic shift to each **training** row using SHA-256 over `schema + order seed + sample_id`, and remaps the private training reference to preserve answer content. Identity shifts are retained as part of the frozen uniform hash mapping.
+
+Everything else remains M2a-identical: B0 initialization, 1,968 admitted rows, the seed-20260903 256-example selection, semantic option-text target, image preprocessing, QLoRA rank/alpha/dropout and trainable modules, optimizer, learning rate, accumulation, 128 optimizer steps, FP16/NF4 V100 runtime, inference prompt, parser, scorer, and original/rotate-1 development surfaces.
+
+The transform does not touch evaluation data. It writes an answer-free inference surface, a mode-0600 reference file, source/output hashes, all-row answer-position counts, shift counts, and the exact 256-example training-selection audit. Frozen B0 semantic predictions are reused only after their hashes match the M2a archive.
+
+## Preregistered gates
+
+1. Surface gate before GPU work:
+   - 1,968 unique output rows and exact input ID equality;
+   - answer content preserved for every row;
+   - no reference fields in the inference surface;
+   - all four cyclic shifts represented;
+   - each answer position is between 20% and 30% of the frozen 256-example selection.
+2. Two-step V100 smoke: finite loss/gradients, two applied optimizer steps, saved adapter hashes, peak memory, and four completed reload predictions.
+3. One 128-step seed only; no M2a rerun and no seed search.
+4. Frozen PMC gate, conjunctive:
+   - original-order M2b-minus-B0 accuracy is positive;
+   - rotated-order paired 95% CI lower bound is at least -1 point;
+   - content-consistency paired 95% CI lower bound is at least -1 point.
+5. Only if all PMC checks pass: run the already frozen SLAKE answer-only retention comparison.
+
+Failure archives M2b without changing its order seed or inspecting per-sample correctness. No M2a/M2b result authorizes Med-CMR access; a new milestone would require PMC plus SLAKE gates and a separately frozen test decision.
