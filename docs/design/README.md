@@ -1,7 +1,7 @@
 # Med-CMR 小模型多模态医学推理：设计文档入口
 
-状态：`DESIGN-READY`（设计已收敛；尚无本项目实测主结果）
-更新：2026-08-31
+状态：`BASELINE COMPLETE / AGENT M0 CLOSURE PASS / REAL AGENT SCORE PENDING`
+更新：2026-09-02
 
 ## 1. 文档权威顺序
 
@@ -22,10 +22,10 @@
 - **专属多模态 Agent**：针对细粒度视觉证据、跨视图/时间整合和长尾临床逻辑进行受控工具调用；
 - **证据 + 结果多维评测**：答案、证据、因果依赖、校准、工具净收益和成本同时报告。
 
-当前已经完成的是“探索 + 方法与实验设计”。下列内容仍是待执行事项，不能写成结果：
+当前已完成可信 B0、训练迁移诊断和 Agent M0 synthetic 闭环。M0 只证明工具/轨迹/评分/verifier 接线正确，不是模型效果。下列内容仍不能写成结果：
 
-- Qwen3.5-4B 在 Med-CMR 上的真实零样本和结构化提示基线；
-- Med-CMR 数据许可、正式测试集和官方 evaluator 的可获得性核验；
+- Qwen3.5-4B 医疗 Agent 在真实开发集上的净增益；
+- MedVidBench 本地归档所述官方 evaluator 与 test leaderboard 的独立复现；
 - 任何超过论文/排行榜 baseline 的数字；
 - 任何关于工具、训练或 Agent 的因果增益结论。
 
@@ -41,6 +41,11 @@
 | `03_experiments` | 定义迭代顺序和停止条件 | baseline ladder、消融、阶段门 |
 | `04_implementation` | 定义可复现运行与资源 | 产物 schema、精确恢复、GPU 估算 |
 | `sources` | 保存外部材料入口 | [Survey 来源台账](../../sources/survey_sources.md) |
+
+Video Agent 专项入口：
+
+- [用户提供 `base_video_agent` 行为审计](01_survey/base_video_agent_audit.md)
+- [医疗多模态 Agent M0 与评测闭环](02_method/medical_multimodal_agent_m0.md)
 
 ## 4. 从 AlphaResearcher-Bench 借用什么
 

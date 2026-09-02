@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-02
-当前主阶段：`A1 archived / new source-diverse MCQ calibration gate required`
+当前主阶段：`A1 archived / medical Agent M0 closure passed / Qwen backend M1 next`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -64,7 +64,7 @@
 ## 5. Checklist Link
 
 - checklist path：`CHECKLIST.md`。
-- next item：准入新的 source-diverse MCQ calibration/validation split；冻结 PMC-512 为 analysis-only，再设计 A2 calibrated Agent。Med-CMR test 保持关闭。
+- next item：实现 Qwen3.5-4B `decide/finalize` backend 与可恢复 batch runner；先在不超过 16 条 answer-blind 开发样本上完成单 V100 operational smoke。Med-CMR test 保持关闭。
 
 ## 6. Revision Log
 
@@ -102,6 +102,7 @@
 | 2026-09-02 | 修复 semantic MCQ invalid 聚合 | scorer 只识别字面量 `invalid`，漏计 `invalid_option_text`；正确率一直按 `parsed_answer=None` 计错 | commit `a5ddf38` 按空解析计 invalid；保留旧 metrics，重算只改变 invalid 字段与文件哈希 |
 | 2026-09-02 | A1 四视图 semantic consensus Agent 启动 | controller 通过 65 tests；shift-2/shift-3 smoke 均 8/8 completed/parseable，且不读取正确率 | 仅补跑缺失的两个 512 views；复用 hash-frozen M2a original/rotate-1，完成后才执行 conjunctive gate |
 | 2026-09-02 | A1 四视图 Agent 完成并归档 | 58.0078% 与 B0 相同，较 M2a `-4.8828` 且 CI `[-8.3984,-1.5625]`；invalid 降至 4、顺序不变量通过，但成本为 4 calls/question | shifts 2/3 的 45.1172/45.7031% 弱视图拖累 majority vote；禁止按已见结果挑 view，PMC-512 对该家族转为 analysis-only |
+| 2026-09-02 | VideoSpy 行为审计与医疗 Agent M0 synthetic 闭环通过 | 显式工具白名单、三类确定性视觉工具、完整轨迹、独立 finalizer、reference-isolated scorer 与 verifier 已实现；全仓 71 tests 通过 | 仅跨过工程闭环边界；真实 Qwen backend、医疗语义正确性、因果工具增益和 MedVidBench official score 均未建立 |
 
 ## 7. External Development Gate Contract
 

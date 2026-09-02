@@ -46,6 +46,21 @@
 - [x] baseline artifact/report written
 - [x] next stage named explicitly
 
+## Medical Multimodal Agent M0
+
+- [x] 用户提供的 VideoSeek/VideoSpy 目录按不可信参考材料完成行为审计
+- [x] 参考源码哈希、缺失 license/test suite 的再分发风险已记录；未 vendor 原包
+- [x] `inspect_overview`、`temporal_skim`、`region_inspect` 确定性工具已实现
+- [x] per-run 显式工具 allowlist、重复调用拒绝和失败 trace 已实现
+- [x] 至少一个成功视觉产物才能 final，decision 与 finalizer 调用已分离
+- [x] inference manifest 硬拒绝 reference 字段；scorer-only reference access 已测试
+- [x] E0/E1/E2/E3 分层 scorer 与哈希/复算 verifier 已实现
+- [x] synthetic artifact closure 六项 verifier 检查 PASS；全仓 71 tests 通过
+- [ ] Qwen3.5-4B backend adapter 与可恢复 batch runner 完成
+- [ ] 单 V100、≤16 条 answer-blind real-model operational smoke 完成
+- [ ] source-diverse 开发集上的 no-tool/tool/forced/oracle/compute-matched 对照完成
+- [ ] 工具净收益与 evidence dependency 通过多 seed/干预门
+
 ## Optimization Data Gate
 
 - [x] B1-v2 answer-blind operational smoke passed
