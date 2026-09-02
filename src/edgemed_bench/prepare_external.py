@@ -341,6 +341,9 @@ def split_surfaces(
             "source_version": row["source_version"],
             "source_record_id": row.get("source_record_id"),
         }
+        evaluation_metadata = row.get("slake_metadata")
+        if isinstance(evaluation_metadata, dict):
+            inference["evaluation_metadata"] = evaluation_metadata
         if kind == "mcq":
             options = row.get("options")
             if not isinstance(options, dict) or set(options) != set("ABCD"):

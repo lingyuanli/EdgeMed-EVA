@@ -1,6 +1,6 @@
 # Med-CMR Optimization Checklist
 
-更新：2026-09-01
+更新：2026-09-02
 
 ## Frontier
 
@@ -8,7 +8,7 @@
 - primary optimize submode: `train`
 - incumbent: `qwen35-4b-medcmr-b0`, verified MCQ accuracy `27.1690%`
 - promoted line: none; zero-shot B1 failed the frozen external-development comparison
-- active implementation candidate: `m1a-answer-qlora`, direct-answer supervised adaptation
+- active implementation candidate: `transfer-failure-20260902`, source-diverse retention and label-invariance diagnostics
 - full-eval queue: empty; Med-CMR test scoring is prohibited until the candidate and evaluation budget are frozen
 
 ## Control Checks
@@ -44,6 +44,10 @@
 - [x] M1a pilot seeds 20260902/20260903 completed; 3/3 positive and 3/3 paired-CI lower bounds above zero
 - [x] 512-step nested budget study completed; seed3/128 retained and hash-frozen
 - [x] frozen best-SFT Med-CMR run completed: M1a significantly regressed by -2.8100 points despite zero invalid parses
+- [x] transfer-failure campaign hypotheses, ordering, and stop rules preregistered before new GPU scoring
+- [x] SLAKE proxy scorer/paired comparison implemented with answer-type/content/modality slices
+- [ ] SLAKE B0-vs-M1a retention slice completed and hash-bound
+- [ ] PMC answer-preserving option-rotation diagnostic completed
 
 ## Smoke Queue
 
@@ -61,4 +65,4 @@
 
 ## Next Concrete Action
 
-Archive M1a and keep the completed best-SFT test closed. Build a source-diverse transfer/retention gate using non-Med-CMR development data, then shift mechanism family toward audited visual evidence and selective Agent behavior. No new Med-CMR run is allowed until a separately preregistered milestone is frozen.
+Run the preregistered SLAKE B0-vs-M1a retention slice. Archive M1a as a general-retention parent if either paired proxy interval is wholly below the `-1.0` point non-inferiority margin. Med-CMR remains closed.

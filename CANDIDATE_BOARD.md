@@ -1,6 +1,6 @@
 # Med-CMR Candidate Board
 
-更新：2026-09-01
+更新：2026-09-02
 
 ## Shared Ranking Surface
 
@@ -8,11 +8,12 @@ Candidates are ranked by information gain, feasibility on one V100, test-compara
 
 | Rank | Candidate ID | Level | Parent | Strategy | Mechanism / Layer | Status | Expected Gain | Observed Result | Promote / Archive |
 |---:|---|---|---|---|---|---|---|---|---|
-| 1 | `m1a-answer-qlora` | implementation | `qwen35-4b-medcmr-b0` | exploit | supervised objective / Tier2 | `test_failed_archived` | Tests whether admitted external medical MCQs improve domain answer alignment on one V100 | PMC dev 3/3 positive, but Med-CMR 24.3591% vs B0 27.1690%; -2.8100 points with CI entirely below zero; all seven dimensions regress, invalid becomes 0 | archive M1a; do not repeat test or tune from per-sample labels; redesign transfer gate before a new mechanism |
-| 2 | `b1-evidence-answer-v2` | implementation | `b1-structured-json-v1` | debug | prompt + representation / Tier1 | `dev_failed_archived` | Tests the minimum evidence-attribution surface after v1 proved too complex for reliable zero-shot formatting | 512/512 strict JSON, but 39.8438% vs direct 57.6172%; paired delta -17.7734 points, CI entirely below zero | **archive for answer optimization; retain as negative result** |
-| 3 | `m1b-evidence-sft` | brief | `m1a-answer-qlora` | explore | supervised objective / Tier2 | `held_evidence_gate` | Adds evidence behavior only after answer-domain adaptation is attributable | SLAKE admitted, but PMC captions are not eligible human visual-evidence targets | require audited evidence targets; do not train raw captions as observations |
-| 4 | `b2-selective-crop` | brief | `qwen35-4b-medcmr-b0` | explore | tool/system / Tier2 | `held_oracle_gate` | May improve SOD/FDD if native resolution is limiting | n/a | hold until an answer-blind oracle-crop study shows useful upper bound |
-| 5 | `b1-structured-json-v1` | implementation | `qwen35-4b-medcmr-b0` | exploit | prompt + representation / Tier1 | `smoke_failed` | Structured evidence, competing hypotheses, and answer | 14/14 completed but only 8/14 strict schema; 4 cardinality failures and 2 truncations | archive; do not rerun unchanged |
+| 1 | `transfer-failure-20260902` | analysis | `m1a-answer-qlora` | debug | evaluation/data view / Tier1 | `slice_a_ready` | Distinguishes cross-source semantic retention from same-source/letter-token shortcuts without reopening Med-CMR | Campaign frozen; SLAKE 1,053-row B0-vs-M1a slice ready | run SLAKE retention, then answer-preserving PMC option rotation |
+| 2 | `m1a-answer-qlora` | implementation | `qwen35-4b-medcmr-b0` | exploit | supervised objective / Tier2 | `test_failed_archived` | Tests whether admitted external medical MCQs improve domain answer alignment on one V100 | PMC dev 3/3 positive, but Med-CMR 24.3591% vs B0 27.1690%; -2.8100 points with CI entirely below zero; all seven dimensions regress, invalid becomes 0 | archive M1a; do not repeat test or tune from per-sample labels; redesign transfer gate before a new mechanism |
+| 3 | `b1-evidence-answer-v2` | implementation | `b1-structured-json-v1` | debug | prompt + representation / Tier1 | `dev_failed_archived` | Tests the minimum evidence-attribution surface after v1 proved too complex for reliable zero-shot formatting | 512/512 strict JSON, but 39.8438% vs direct 57.6172%; paired delta -17.7734 points, CI entirely below zero | **archive for answer optimization; retain as negative result** |
+| 4 | `m1b-evidence-sft` | brief | `m1a-answer-qlora` | explore | supervised objective / Tier2 | `held_evidence_gate` | Adds evidence behavior only after answer-domain adaptation is attributable | SLAKE admitted, but PMC captions are not eligible human visual-evidence targets | require audited evidence targets; do not train raw captions as observations |
+| 5 | `b2-selective-crop` | brief | `qwen35-4b-medcmr-b0` | explore | tool/system / Tier2 | `held_oracle_gate` | May improve SOD/FDD if native resolution is limiting | n/a | hold until an answer-blind oracle-crop study shows useful upper bound |
+| 6 | `b1-structured-json-v1` | implementation | `qwen35-4b-medcmr-b0` | exploit | prompt + representation / Tier1 | `smoke_failed` | Structured evidence, competing hypotheses, and answer | 14/14 completed but only 8/14 strict schema; 4 cardinality failures and 2 truncations | archive; do not rerun unchanged |
 
 ## Active Repair: B1 Evidence + Answer v2
 

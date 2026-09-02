@@ -139,6 +139,7 @@ def test_split_surfaces_keeps_answers_out_of_inference(tmp_path: Path) -> None:
         "answer": "B",
         "answer_text": "two",
         "source_caption": "answer-bearing context",
+        "slake_metadata": {"answer_type": "OPEN", "content_type": "Abnormality"},
         "image_path": "image.png",
         "image_sha256": "abc",
     }
@@ -150,6 +151,10 @@ def test_split_surfaces_keeps_answers_out_of_inference(tmp_path: Path) -> None:
     inference_row = read_jsonl(inference)[0]
     assert "answer" not in inference_row
     assert "source_caption" not in inference_row
+    assert inference_row["evaluation_metadata"] == {
+        "answer_type": "OPEN",
+        "content_type": "Abnormality",
+    }
     assert set(inference_row["options"]) == set("ABCD")
     assert read_jsonl(references) == [{"answer": "B", "sample_id": "external-1"}]
     assert oct(references.stat().st_mode & 0o777) == "0o600"

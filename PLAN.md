@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
-更新：2026-09-01
-当前主阶段：`M1a official-test regression archived / transfer-gate redesign next`
+更新：2026-09-02
+当前主阶段：`transfer-failure campaign / SLAKE retention slice ready`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -64,7 +64,7 @@
 ## 5. Checklist Link
 
 - checklist path：`CHECKLIST.md`。
-- next item：不再消费 M1a Med-CMR test；建立 source-diverse development/retention gate，解释 PMC-VQA 正迁移为何在 Med-CMR 七维全部反转，再决定 evidence/Agent 新机制。
+- next item：执行 `transfer-failure-20260902` 的 SLAKE retention slice；随后执行 PMC answer-preserving option rotation。Med-CMR test 保持关闭。
 
 ## 6. Revision Log
 
@@ -89,6 +89,7 @@
 | 2026-09-01 | M1a 128-step pilot 三 seed 全部完成 | 三 seed 61.7188/63.8672/66.0156%，相对 direct 均为正且各自 paired CI 下界 >0；平均提升 +6.25 点 | M1a 通过跨 seed pilot 门；继续单变量训练预算研究，Med-CMR test 仍关闭 |
 | 2026-09-01 | seed3 512-step 嵌套预算研究完成 | 65.2344%，相对 direct +7.6172 点；但相对 seed3/128 为 -0.7813，CI 跨零、p=0.72 | 保留 seed3/128（66.0156%）为冻结最佳 SFT checkpoint；允许一次正式 Med-CMR MCQ milestone evaluation |
 | 2026-09-02 | 冻结 seed3/128 完成 16,655 条 Med-CMR MCQ | M1a 24.3591% vs B0 27.1690%，paired delta -2.8100，95% CI `[-3.3443,-2.2696]`，七维全部回退；但 invalid 从 773 降至 0 | M1a 正式归档为迁移失败；不得按 test 逐样本调优或重复 M1a test，转向 source-diverse transfer gate 与新机制 |
+| 2026-09-02 | 预注册 transfer-failure campaign 与 SLAKE proxy scorer | PMC dev 与训练同属 caption-derived 四选一生成族，无法证明跨源迁移；aggregate Med-CMR 结果不能定位因果 | 先做 1,053 条 SLAKE B0-vs-M1a 保留评测，再做 PMC 选项旋转；不重新访问 Med-CMR |
 
 ## 7. External Development Gate Contract
 
@@ -106,4 +107,4 @@
 - adapter reload gate: 4/4 completed, zero invalid parse; 3/4 accuracy is operational-only and not an efficacy claim.
 - three-seed result: mean 63.8672%, mean +6.25 points; 3/3 positive and 3/3 paired-CI lower bounds above zero.
 - frozen checkpoint: seed 20260903 / 128 steps; adapter SHA-256 `874233467cae2428524a5184d702667e71ab2e6c49bccc41712fd58b87b9c64c`.
-- next execution: `scripts/run-medcmr-m1a-mcq-full.sh` in tmux; this consumes the single best-SFT Med-CMR MCQ evaluation budget only if the run completes.
+- next execution: `scripts/run-slake-m1a-retention.sh` in tmux; this consumes no Med-CMR evaluation budget.
