@@ -1,7 +1,7 @@
 # Med-CMR Formal Baseline Plan
 
 更新：2026-09-01
-当前主阶段：`M1a best-SFT Med-CMR full MCQ running`
+当前主阶段：`M1a official-test regression archived / transfer-gate redesign next`
 目标状态：一条可复算、可比较、绑定来源与运行产物的 Qwen3.5-4B Med-CMR baseline。
 
 ## 1. Core Contract
@@ -64,7 +64,7 @@
 ## 5. Checklist Link
 
 - checklist path：`CHECKLIST.md`。
-- next item：守护冻结的 best-SFT 16,655 MCQ run 至完整 exit；完成前不读取或报告中途准确率。
+- next item：不再消费 M1a Med-CMR test；建立 source-diverse development/retention gate，解释 PMC-VQA 正迁移为何在 Med-CMR 七维全部反转，再决定 evidence/Agent 新机制。
 
 ## 6. Revision Log
 
@@ -88,6 +88,7 @@
 | 2026-09-01 | M1a 128-step pilot seed 20260901 完成成对开发评测 | 61.7188% vs direct 57.6172%；delta +4.1016，bootstrap CI `[0.3906,8.0078]`，McNemar `p=0.0439` | 单 seed 通过但显著性临界；不触碰 Med-CMR test，追加两个冻结 seed |
 | 2026-09-01 | M1a 128-step pilot 三 seed 全部完成 | 三 seed 61.7188/63.8672/66.0156%，相对 direct 均为正且各自 paired CI 下界 >0；平均提升 +6.25 点 | M1a 通过跨 seed pilot 门；继续单变量训练预算研究，Med-CMR test 仍关闭 |
 | 2026-09-01 | seed3 512-step 嵌套预算研究完成 | 65.2344%，相对 direct +7.6172 点；但相对 seed3/128 为 -0.7813，CI 跨零、p=0.72 | 保留 seed3/128（66.0156%）为冻结最佳 SFT checkpoint；允许一次正式 Med-CMR MCQ milestone evaluation |
+| 2026-09-02 | 冻结 seed3/128 完成 16,655 条 Med-CMR MCQ | M1a 24.3591% vs B0 27.1690%，paired delta -2.8100，95% CI `[-3.3443,-2.2696]`，七维全部回退；但 invalid 从 773 降至 0 | M1a 正式归档为迁移失败；不得按 test 逐样本调优或重复 M1a test，转向 source-diverse transfer gate 与新机制 |
 
 ## 7. External Development Gate Contract
 

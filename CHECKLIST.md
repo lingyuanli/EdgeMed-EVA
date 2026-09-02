@@ -62,5 +62,6 @@
 - [x] T1a seeds 20260902/20260903 completed; 3/3 directions and CI lower bounds positive
 - [x] seed 20260903 512-step study completed; 128-step incumbent retained
 - [x] best-SFT checkpoint frozen before Med-CMR access (seed3/128, hash-bound)
-- [ ] best-SFT full Med-CMR MCQ milestone run completed and independently scored
+- [x] best-SFT full Med-CMR MCQ milestone completed and independently scored: 24.3591%, significant -2.8100 point regression
+- [x] M1a archived without per-sample test tuning or repeated test evaluation
 - [ ] golden validation annotation protocol frozen before model scoring
