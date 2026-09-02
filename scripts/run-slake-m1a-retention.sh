@@ -8,9 +8,9 @@ surface_root="${EDGEMED_SLAKE_SURFACES:-/home/ubuntu/data/external/surfaces/slak
 model_path="${EDGEMED_MODEL_PATH:-/home/ubuntu/models/Qwen3.5-4B}"
 model_receipt="${repo_root}/baselines/local/qwen35-4b-medcmr-b0/source_manifest.json"
 adapter_run="${repo_root}/runs/qwen35-4b-pmc-t1a-qlora-pilot128-s20260903"
-direct_run="${repo_root}/runs/qwen35-4b-slake-validation-direct-20260902"
-adapter_eval_run="${repo_root}/runs/qwen35-4b-slake-validation-m1a-s20260903-20260902"
-comparison="${repo_root}/runs/slake-validation-direct-vs-m1a-s20260903-20260902.json"
+direct_run="${repo_root}/runs/qwen35-4b-slake-validation-answer-only-b0-20260902"
+adapter_eval_run="${repo_root}/runs/qwen35-4b-slake-validation-answer-only-m1a-s20260903-20260902"
+comparison="${repo_root}/runs/slake-validation-answer-only-b0-vs-m1a-s20260903-20260902.json"
 
 cd "${repo_root}"
 test -f "${manifest}"

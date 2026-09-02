@@ -2,6 +2,7 @@ from edgemed_bench.parsing import (
     parse_evidence_answer_mcq,
     parse_mcq,
     parse_open,
+    parse_open_answer_only,
     parse_structured_mcq,
 )
 from edgemed_bench.prompts import mcq_prompt, open_prompt, prompt_hash
@@ -117,3 +118,10 @@ def test_open_parser() -> None:
     reasoning, answer, status = parse_open("Reasoning: visible finding\nAnswer: diagnosis")
     assert (reasoning, answer, status) == ("visible finding", "diagnosis", "strict")
     assert parse_open("No schema") == (None, None, "invalid")
+
+
+def test_answer_only_open_parser_accepts_only_one_short_line() -> None:
+    assert parse_open_answer_only("MRI\n") == (None, "MRI", "bare_answer")
+    assert parse_open_answer_only("Answer: MRI\n") == (None, "MRI", "answer_only")
+    assert parse_open_answer_only("MRI\nExplanation: because") == (None, None, "invalid")
+    assert parse_open("MRI\n") == (None, None, "invalid")

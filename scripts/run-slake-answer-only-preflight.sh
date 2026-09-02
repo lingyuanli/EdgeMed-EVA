@@ -7,9 +7,9 @@ surface_root="${EDGEMED_SLAKE_SURFACES:-/home/ubuntu/data/external/surfaces/slak
 model_path="${EDGEMED_MODEL_PATH:-/home/ubuntu/models/Qwen3.5-4B}"
 model_receipt="${repo_root}/baselines/local/qwen35-4b-medcmr-b0/source_manifest.json"
 adapter_run="${repo_root}/runs/qwen35-4b-pmc-t1a-qlora-pilot128-s20260903"
-b0_run="${repo_root}/runs/qwen35-4b-slake-answer-only32-preflight-b0-20260902"
-m1a_run="${repo_root}/runs/qwen35-4b-slake-answer-only32-preflight-m1a-20260902"
-receipt="${repo_root}/runs/slake-answer-only32-preflight-20260902.json"
+b0_run="${repo_root}/runs/qwen35-4b-slake-answer-only32-preflight-b0-parser2-20260902"
+m1a_run="${repo_root}/runs/qwen35-4b-slake-answer-only32-preflight-m1a-parser2-20260902"
+receipt="${repo_root}/runs/slake-answer-only32-preflight-parser2-20260902.json"
 
 cd "${repo_root}"
 test -f "${surface_root}/inference.jsonl"

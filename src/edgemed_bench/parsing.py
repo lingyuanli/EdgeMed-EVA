@@ -82,3 +82,14 @@ def parse_open(text: str) -> tuple[str | None, str | None, str]:
     if answer_match:
         return None, answer_match.group(1).strip(), "answer_only"
     return None, None, "invalid"
+
+
+def parse_open_answer_only(text: str) -> tuple[str | None, str | None, str]:
+    """Parse the external answer-only variant without changing direct-open behavior."""
+    reasoning, answer, status = parse_open(text)
+    if answer is not None:
+        return reasoning, answer, status
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if len(lines) == 1 and len(lines[0].split()) <= 20:
+        return None, lines[0], "bare_answer"
+    return None, None, "invalid"

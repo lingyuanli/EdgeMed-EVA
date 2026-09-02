@@ -15,7 +15,13 @@ from typing import Any
 from PIL import Image
 
 from .io import append_jsonl, read_jsonl, reject_reference_fields, sha256_file, write_json
-from .parsing import parse_evidence_answer_mcq, parse_mcq, parse_open, parse_structured_mcq
+from .parsing import (
+    parse_evidence_answer_mcq,
+    parse_mcq,
+    parse_open,
+    parse_open_answer_only,
+    parse_structured_mcq,
+)
 from .prompts import (
     MCQ_PROMPT_VARIANTS,
     OPEN_PROMPT_VARIANTS,
@@ -340,7 +346,10 @@ def main() -> None:
                 parsed_answer, parse_status = parse_mcq(raw_output)
                 parsed: dict[str, Any] = {"parsed_answer": parsed_answer}
             else:
-                reasoning, parsed_answer, parse_status = parse_open(raw_output)
+                if args.prompt_variant == "answer_only":
+                    reasoning, parsed_answer, parse_status = parse_open_answer_only(raw_output)
+                else:
+                    reasoning, parsed_answer, parse_status = parse_open(raw_output)
                 parsed = {"parsed_reasoning": reasoning, "parsed_answer": parsed_answer}
 
             result = {

@@ -49,6 +49,8 @@
 - [x] deterministic answer-preserving option rotation and content-consistency scorer implemented
 - [x] SLAKE direct-reasoning 64-token full launch stopped at 51 rows after answer-blind parse preflight failed (46 invalid); failed artifact preserved
 - [x] bounded direct-reasoning 128-token smoke failed operational gate at 29/32 parseable; artifact preserved
+- [x] first answer-only smoke isolated marker-only parser mismatch: B0 15/32 and M1a 1/32 under old parser, while failures were bare single-line answers; no references used
+- [x] variant-scoped `bare_answer` parser implemented; direct Med-CMR open parsing unchanged
 - [ ] SLAKE answer-only B0 and M1a 32-row operational smokes each pass at least 31/32 parseable outputs
 - [ ] SLAKE B0-vs-M1a retention slice completed and hash-bound
 - [ ] PMC answer-preserving option-rotation diagnostic completed
