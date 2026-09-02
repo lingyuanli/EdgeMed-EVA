@@ -43,7 +43,40 @@ def test_controller_blocks_finalization_without_visual_evidence(tmp_path: Path) 
             raise AssertionError("finalizer must not run")
 
     with pytest.raises(RuntimeError, match="no successful visual evidence"):
-        run_medical_agent(_sample(tmp_path), PrematureBackend(), tmp_path, tmp_path / "artifacts")
+        run_medical_agent(
+            _sample(tmp_path), PrematureBackend(), tmp_path, tmp_path / "artifacts",
+            allowed_tools=("region_inspect",),
+        )
+
+
+def test_controller_forces_auditable_overview_when_backend_stops_before_evidence(
+    tmp_path: Path,
+) -> None:
+    class PrematureThenFinalBackend:
+        def decide(self, messages, tools):
+            return {"content": "evidence is sufficient", "tool_call": None}
+
+        def finalize(self, messages, output_schema):
+            return {"sample_id": "s1", "answer": "A"}
+
+    result = run_medical_agent(
+        _sample(tmp_path),
+        PrematureThenFinalBackend(),
+        tmp_path,
+        tmp_path / "artifacts",
+        allowed_tools=("inspect_overview", "region_inspect"),
+        max_steps=2,
+    )
+    interventions = [
+        message for message in result.trajectory["messages"]
+        if message.get("policy_intervention") == "first_visual_acquisition_required"
+    ]
+    assert len(interventions) == 1
+    assert interventions[0]["tool_call"] == {
+        "name": "inspect_overview", "arguments": {"sample_count": 1}
+    }
+    assert result.tool_traces[0]["status"] == "completed"
+    assert result.tool_traces[0]["tool_name"] == "inspect_overview"
 
 
 def test_inference_row_rejects_reference_fields(tmp_path: Path) -> None:

@@ -104,8 +104,23 @@ def run_medical_agent(
             assistant_message["tool_call"] = tool_call
         messages.append(assistant_message)
         if tool_call is None:
-            finish_reason = "evidence_sufficient"
-            break
+            has_visual_evidence = any(
+                trace["status"] == "completed" for trace in executor.traces
+            )
+            if has_visual_evidence:
+                finish_reason = "evidence_sufficient"
+                break
+            if "inspect_overview" not in allowed_tools:
+                break
+            tool_call = {"name": "inspect_overview", "arguments": {"sample_count": 1}}
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": "Visual evidence is required before finalization.",
+                    "tool_call": tool_call,
+                    "policy_intervention": "first_visual_acquisition_required",
+                }
+            )
         if not isinstance(tool_call, dict) or not isinstance(tool_call.get("arguments"), dict):
             raise ValueError("tool_call must contain name and object arguments")
         result, trace = executor.execute(str(tool_call.get("name")), tool_call["arguments"])
