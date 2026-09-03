@@ -16,3 +16,9 @@ M4 证明 locator 能在未见 test 图像上保持定位指标，但 crop-fusio
 - 次比较：B-A；报告 exact、token F1、完整性、图像与 prediction SHA-256。
 
 只有 B-C 点估计大于 0 且 95% CI 下界大于 0，才允许构建 learned-pointer。若 B-A 不大于 0，则即使 B-C 为正也只视为机制信号，必须另行设计无提示损伤的呈现方式。任一门失败时停止 pointer，不根据 validation 单题移动或改画框。
+
+## 3. 结果：未通过
+
+两臂均完成 43/43；oracle-pointer / sham-pointer token F1 为 `71.63% / 65.24%`，exact 为 `53.49% / 48.84%`。oracle-sham 的 token F1 delta 为 `+6.39` points，但 95% CI 为 `[-1.48, 15.81]`；oracle-full 为 `+2.68`，95% CI `[-6.30, 12.54]`。sham-full 为 `-3.71`，说明错误位置的指示器可能有损，但样本量下同样不确定。
+
+主门要求 oracle-sham CI 下界大于 0，实际未满足。因此 M5-S1 记为 `blocked_by_uncertain_causal_effect`，不构建 learned pointer，也不通过调整颜色、线宽、prompt 或逐题框位置继续搜索。

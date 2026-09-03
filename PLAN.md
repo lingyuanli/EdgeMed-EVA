@@ -112,6 +112,7 @@
 | 2026-09-04 | M3 crop-only 因果筛选失败，M4 global-local oracle 多视图通过 | crop-only 相对 full token F1 `-9.26`；full+oracle 相对 full `+7.59`（CI `[0.23,16.74]`），相对 full+black `+8.37`（CI `[0.47,18.60]`） | 冻结多视图协议；只将 oracle 框替换为 locator-64 预测框，执行 learned-crop deployability gate |
 | 2026-09-04 | M4 learned-crop validation 出现正向 pilot signal | token F1 `70.93%`；相对 full `+1.98`，相对 full+black `+2.76`；捕获 oracle 增量 26.06%，但 black 对照 CI 跨零 | 不进 Med-CMR；在零图像重叠的 45 条 SLAKE official test 上执行一次冻结 held-out 复现 |
 | 2026-09-04 | M4 SLAKE official test held-out 未复现 | locator 泛化到 mean IoU `0.3751`，但 learned-full 仅 `+1.31`、learned-black `+0.12` 且 CI 跨零；oracle-full `-2.00` | 冻结并停止 crop-fusion；不再用 SLAKE test 调参，开发新的单图 region-pointer 证据机制 |
+| 2026-09-04 | M5 oracle region-pointer 未过严格因果门 | oracle-sham token F1 `+6.39`，但 CI `[-1.48,15.81]`；oracle-full `+2.68`，CI 同样跨零 | 不构建 learned pointer；回查 Med-CMR evidence 评分合同，确认空间定位是否值得作为独立优化目标 |
 
 ## 7. External Development Gate Contract
 
