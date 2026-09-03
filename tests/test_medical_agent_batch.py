@@ -7,7 +7,7 @@ from PIL import Image
 
 from edgemed_bench.finalize_agent_eval import finalize_agent_evaluation
 from edgemed_bench.io import read_jsonl
-from edgemed_bench.qwen_agent_backend import parse_json_object
+from edgemed_bench.qwen_agent_backend import build_decision_instruction, parse_json_object
 from edgemed_bench.run_medical_agent import normalize_agent_sample, run_agent_batch
 
 
@@ -177,3 +177,17 @@ def test_parse_json_object_accepts_exact_object(raw: str, expected: dict) -> Non
 def test_parse_json_object_rejects_non_exact_output(raw: str) -> None:
     with pytest.raises(ValueError, match="exactly one JSON object"):
         parse_json_object(raw)
+
+
+def test_forced_region_requirement_is_promoted_to_decision_instruction() -> None:
+    requirement = "Call region_inspect exactly once."
+    instruction = build_decision_instruction(
+        [{
+            "role": "user",
+            "content": {"controller_requirement": requirement},
+            "policy_intervention": "targeted_region_required",
+        }],
+        {"region_inspect": {"required": ["media_id"]}},
+    )
+    assert instruction.endswith("CONTROLLER_REQUIREMENT=" + requirement)
+    assert "A CONTROLLER_REQUIREMENT overrides the optional stop" in instruction

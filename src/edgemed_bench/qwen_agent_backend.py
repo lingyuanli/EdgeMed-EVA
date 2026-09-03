@@ -19,10 +19,11 @@ Return exactly one JSON object and no Markdown. Use one of these forms:
 {"content":"brief evidence gap","tool_call":{"name":"enabled tool","arguments":{}}}
 {"content":"evidence is sufficient","tool_call":null}
 If no completed visual TOOL_RESULT exists, the first decision must acquire visual evidence.
-If a completed overview exists, inspect it before deciding: either stop if it is sufficient or
-request a question-relevant region smaller than the full frame with a concrete target. Never call
-a tool outside ENABLED_TOOLS. For single-image media, do not call temporal_skim. A repeated
-request is invalid."""
+If a completed overview exists and there is no CONTROLLER_REQUIREMENT, inspect it before deciding:
+either stop if it is sufficient or request a question-relevant region smaller than the full frame
+with a concrete target. A CONTROLLER_REQUIREMENT overrides the optional stop. Never call a tool
+outside ENABLED_TOOLS. For single-image media, do not call temporal_skim. A repeated request is
+invalid."""
 
 FINAL_CONTRACT = """Produce the final evidence-grounded answer as exactly one JSON object and
 no Markdown. Copy every key and value type from OUTPUT_SCHEMA. In particular:
@@ -54,6 +55,23 @@ def parse_json_object(text: str) -> dict[str, Any]:
     if isinstance(value, dict) and not stripped[end:].strip():
         return value
     raise ValueError("Model output is not exactly one JSON object")
+
+
+def build_decision_instruction(
+    messages: list[dict[str, Any]], tools: dict[str, Any]
+) -> str:
+    instruction = DECISION_CONTRACT + "\nENABLED_TOOLS=" + json.dumps(
+        tools, ensure_ascii=False, sort_keys=True
+    )
+    requirements = [
+        message.get("content", {}).get("controller_requirement")
+        for message in messages
+        if message.get("policy_intervention") == "targeted_region_required"
+        and isinstance(message.get("content"), dict)
+    ]
+    if requirements:
+        instruction += "\nCONTROLLER_REQUIREMENT=" + str(requirements[-1])
+    return instruction
 
 
 def validate_model_source(model_path: Path, source_manifest_path: Path) -> dict[str, Any]:
@@ -255,9 +273,7 @@ class Qwen35MedicalAgentBackend:
                 image.close()
 
     def decide(self, messages: list[dict[str, Any]], tools: dict[str, Any]) -> dict[str, Any]:
-        instruction = DECISION_CONTRACT + "\nENABLED_TOOLS=" + json.dumps(
-            tools, ensure_ascii=False, sort_keys=True
-        )
+        instruction = build_decision_instruction(messages, tools)
         parsed, call = self._generate(
             messages, instruction, self.decision_max_new_tokens, "decision"
         )
