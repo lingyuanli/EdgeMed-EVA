@@ -9,6 +9,7 @@ from PIL import Image
 from edgemed_bench.io import read_jsonl
 from edgemed_bench.prepare_external import (
     build_slake_localization_surface,
+    build_slake_multiview_answer_surface,
     build_slake_oracle_crop_answer_surface,
     build_pmc_vqa,
     build_slake,
@@ -374,3 +375,49 @@ def test_slake_oracle_crop_surface_preserves_answer_isolation(tmp_path: Path) ->
     assert read_jsonl(references) == [{"sample_id": "s1", "answer": "red"}]
     assert oct(references.stat().st_mode & 0o777) == "0o600"
     assert report["selection"]["vqa_answer_used_for_selection"] is False
+
+
+def test_slake_multiview_surface_combines_only_answer_free_arms(tmp_path: Path) -> None:
+    common = {
+        "sample_id": "s1",
+        "kind": "open",
+        "question": "What color is the liver?",
+        "task": "fixture",
+        "source_record_id": "7",
+    }
+    paths = {}
+    for arm, image_path, image_sha in (
+        ("full", "source.png", "full-sha"),
+        ("crop", "crops/detail.png", "crop-sha"),
+        ("black", "black/detail.png", "black-sha"),
+    ):
+        path = tmp_path / f"{arm}.jsonl"
+        path.write_text(
+            json.dumps(
+                {
+                    **common,
+                    "image_path": image_path,
+                    "image_sha256": image_sha,
+                    "visual_arm": arm,
+                }
+            )
+            + "\n"
+        )
+        paths[arm] = path
+    oracle_output = tmp_path / "oracle-multiview.jsonl"
+    black_output = tmp_path / "black-multiview.jsonl"
+    report = build_slake_multiview_answer_surface(
+        paths["full"],
+        paths["crop"],
+        paths["black"],
+        oracle_output,
+        black_output,
+        tmp_path / "report.json",
+    )
+    oracle = read_jsonl(oracle_output)[0]
+    black = read_jsonl(black_output)[0]
+    assert "image_path" not in oracle
+    assert [item["role"] for item in oracle["images"]] == ["full_context", "local_detail"]
+    assert oracle["images"][1]["image_sha256"] == "crop-sha"
+    assert black["images"][1]["image_sha256"] == "black-sha"
+    assert report["leakage_boundary"]["references_read"] is False

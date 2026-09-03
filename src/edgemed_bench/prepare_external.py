@@ -859,6 +859,105 @@ def build_slake_oracle_crop_answer_surface(
     return report
 
 
+def build_slake_multiview_answer_surface(
+    full_path: Path,
+    crop_path: Path,
+    black_path: Path,
+    oracle_multiview_output: Path,
+    black_multiview_output: Path,
+    report_path: Path,
+) -> dict[str, Any]:
+    """Combine answer-isolated full/crop arms without reading references."""
+    full_rows = read_jsonl(full_path)
+    crop_rows = read_jsonl(crop_path)
+    black_rows = read_jsonl(black_path)
+    for rows in (full_rows, crop_rows, black_rows):
+        reject_reference_fields(rows)
+    full_by_id = {str(row["sample_id"]): row for row in full_rows}
+    crop_by_id = {str(row["sample_id"]): row for row in crop_rows}
+    black_by_id = {str(row["sample_id"]): row for row in black_rows}
+    expected_ids = [str(row["sample_id"]) for row in full_rows]
+    if (
+        len(full_by_id) != len(full_rows)
+        or len(crop_by_id) != len(crop_rows)
+        or len(black_by_id) != len(black_rows)
+        or set(expected_ids) != set(crop_by_id)
+        or set(expected_ids) != set(black_by_id)
+    ):
+        raise ValueError("Full/crop/black manifests require identical unique sample ids")
+
+    oracle_rows = []
+    black_control_rows = []
+    for sample_id in expected_ids:
+        full = full_by_id[sample_id]
+        crop = crop_by_id[sample_id]
+        black = black_by_id[sample_id]
+        stable_fields = ("question", "kind", "source_record_id")
+        if any(full.get(field) != crop.get(field) or full.get(field) != black.get(field) for field in stable_fields):
+            raise ValueError(f"Arm metadata mismatch: {sample_id}")
+        common = {
+            key: value
+            for key, value in full.items()
+            if key not in {"image_path", "image_sha256", "visual_arm"}
+        }
+        full_spec = {
+            "role": "full_context",
+            "image_path": full["image_path"],
+            "image_sha256": full["image_sha256"],
+        }
+        oracle_rows.append(
+            {
+                **common,
+                "images": [
+                    full_spec,
+                    {
+                        "role": "local_detail",
+                        "image_path": crop["image_path"],
+                        "image_sha256": crop["image_sha256"],
+                    },
+                ],
+                "visual_arm": "full-plus-oracle-crop",
+            }
+        )
+        black_control_rows.append(
+            {
+                **common,
+                "images": [
+                    full_spec,
+                    {
+                        "role": "local_detail",
+                        "image_path": black["image_path"],
+                        "image_sha256": black["image_sha256"],
+                    },
+                ],
+                "visual_arm": "full-plus-black-crop",
+            }
+        )
+    reject_reference_fields(oracle_rows)
+    reject_reference_fields(black_control_rows)
+    _write_jsonl(oracle_multiview_output, oracle_rows)
+    _write_jsonl(black_multiview_output, black_control_rows)
+    report = {
+        "schema_version": "edgemed-slake-multiview-answer-surface/v1",
+        "written_per_arm": len(expected_ids),
+        "arms": ["full-plus-oracle-crop", "full-plus-black-crop"],
+        "input_layout": "labeled-multi-image-v1",
+        "source_hashes": {
+            "full_inference_sha256": sha256_file(full_path),
+            "crop_inference_sha256": sha256_file(crop_path),
+            "black_inference_sha256": sha256_file(black_path),
+            "oracle_multiview_sha256": sha256_file(oracle_multiview_output),
+            "black_multiview_sha256": sha256_file(black_multiview_output),
+        },
+        "leakage_boundary": {
+            "references_read": False,
+            "inference_has_answer_fields": False,
+        },
+    }
+    write_json(report_path, report)
+    return report
+
+
 def quarantine_gate_candidates(
     manifest_path: Path,
     gate_report_path: Path,
@@ -968,6 +1067,13 @@ def main() -> None:
     oracle_crop.add_argument("--black-output", type=Path, required=True)
     oracle_crop.add_argument("--references-output", type=Path, required=True)
     oracle_crop.add_argument("--report", type=Path, required=True)
+    multiview = subparsers.add_parser("slake-multiview-answer-surface")
+    multiview.add_argument("--full", type=Path, required=True)
+    multiview.add_argument("--crop", type=Path, required=True)
+    multiview.add_argument("--black", type=Path, required=True)
+    multiview.add_argument("--oracle-multiview-output", type=Path, required=True)
+    multiview.add_argument("--black-multiview-output", type=Path, required=True)
+    multiview.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
 
     if args.source == "pmc-vqa":
@@ -1034,6 +1140,15 @@ def main() -> None:
             args.crop_output,
             args.black_output,
             args.references_output,
+            args.report,
+        )
+    elif args.source == "slake-multiview-answer-surface":
+        report = build_slake_multiview_answer_surface(
+            args.full,
+            args.crop,
+            args.black,
+            args.oracle_multiview_output,
+            args.black_multiview_output,
             args.report,
         )
     else:

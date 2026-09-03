@@ -72,6 +72,75 @@ def resize_to_pixel_budget(image: Image.Image, max_pixels: int | None) -> Image.
     return resized
 
 
+MULTI_IMAGE_ROLE_LABELS = {
+    "full_context": "Full context image:",
+    "local_detail": "Localized detail image:",
+}
+
+
+def load_visual_inputs(
+    row: dict[str, Any], data_root: Path, max_pixels: int | None
+) -> list[dict[str, Any]]:
+    """Load a hash-checked single image or a fixed-role multi-image input."""
+    if "images" not in row:
+        specs = [
+            {
+                "image_path": row["image_path"],
+                "image_sha256": row["image_sha256"],
+                "role": None,
+            }
+        ]
+    else:
+        if "image_path" in row or "image_sha256" in row:
+            raise ValueError("Multi-image rows cannot also define legacy single-image fields")
+        specs = row["images"]
+        if not isinstance(specs, list) or len(specs) < 2:
+            raise ValueError("Multi-image rows require at least two images")
+    loaded = []
+    for spec in specs:
+        if not isinstance(spec, dict):
+            raise TypeError("Image specification must be an object")
+        role = spec.get("role")
+        if role is not None and role not in MULTI_IMAGE_ROLE_LABELS:
+            raise ValueError(f"Unsupported image role: {role}")
+        image_path = (data_root / spec["image_path"]).resolve()
+        if not image_path.is_file():
+            raise FileNotFoundError(image_path)
+        if sha256_file(image_path) != spec["image_sha256"]:
+            raise ValueError(f"Image hash mismatch: {row['sample_id']}:{role or 'single'}")
+        with Image.open(image_path) as source:
+            image = source.convert("RGB")
+        loaded.append(
+            {
+                "role": role,
+                "image": resize_to_pixel_budget(image, max_pixels),
+                "image_sha256": spec["image_sha256"],
+            }
+        )
+    return loaded
+
+
+def build_message_content(visuals: list[dict[str, Any]], prompt: str) -> list[dict[str, Any]]:
+    if len(visuals) == 1 and visuals[0]["role"] is None:
+        return [
+            {"type": "image", "image": visuals[0]["image"]},
+            {"type": "text", "text": prompt},
+        ]
+    content: list[dict[str, Any]] = []
+    for visual in visuals:
+        role = visual["role"]
+        if role not in MULTI_IMAGE_ROLE_LABELS:
+            raise ValueError("Every multi-image input requires a fixed supported role")
+        content.extend(
+            [
+                {"type": "text", "text": MULTI_IMAGE_ROLE_LABELS[role]},
+                {"type": "image", "image": visual["image"]},
+            ]
+        )
+    content.append({"type": "text", "text": prompt})
+    return content
+
+
 def build_prompt(row: dict[str, Any], kind: str, prompt_variant: str = "direct") -> str:
     if kind == "mcq":
         return mcq_prompt(row["question"], row["options"], variant=prompt_variant)
@@ -160,6 +229,21 @@ def main() -> None:
     rows = select_rows(rows, args.limit, args.sample_id_file)
     if not rows:
         raise ValueError("No rows selected")
+    multi_image_flags = ["images" in row for row in rows]
+    if any(multi_image_flags) and not all(multi_image_flags):
+        raise ValueError("A run cannot mix single-image and multi-image rows")
+    multi_image_roles: list[str] | None = None
+    if all(multi_image_flags):
+        role_schemas = {
+            tuple(str(spec.get("role")) for spec in row["images"])
+            for row in rows
+            if isinstance(row.get("images"), list)
+        }
+        if len(role_schemas) != 1:
+            raise ValueError("All multi-image rows must use the same ordered role schema")
+        multi_image_roles = list(next(iter(role_schemas)))
+        if any(role not in MULTI_IMAGE_ROLE_LABELS for role in multi_image_roles):
+            raise ValueError(f"Unsupported multi-image role schema: {multi_image_roles}")
     option_letters = "ABCDE"
     if args.kind == "mcq":
         option_schemas = {"".join(sorted(row["options"])) for row in rows}
@@ -206,6 +290,9 @@ def main() -> None:
     if args.max_image_pixels is not None:
         contract["max_image_pixels"] = args.max_image_pixels
         contract["image_resize"] = "aspect-preserving-lanczos"
+    if multi_image_roles is not None:
+        contract["input_layout"] = "labeled-multi-image-v1"
+        contract["image_roles"] = multi_image_roles
     if args.adapter_path is not None:
         contract["adapter_path"] = str(args.adapter_path.resolve())
         contract["adapter_source_manifest_sha256"] = sha256_file(args.adapter_source_manifest)
@@ -290,23 +377,12 @@ def main() -> None:
     try:
         for position, row in enumerate(pending, 1):
             sample_started = time.perf_counter()
-            image_path = (args.data_root / row["image_path"]).resolve()
-            if not image_path.is_file():
-                raise FileNotFoundError(image_path)
-            if sha256_file(image_path) != row["image_sha256"]:
-                raise ValueError(f"Image hash mismatch: {row['sample_id']}")
-
-            with Image.open(image_path) as source:
-                image = source.convert("RGB")
-            image = resize_to_pixel_budget(image, args.max_image_pixels)
+            visuals = load_visual_inputs(row, args.data_root, args.max_image_pixels)
             prompt = build_prompt(row, args.kind, args.prompt_variant)
             messages = [
                 {
                     "role": "user",
-                    "content": [
-                        {"type": "image", "image": image},
-                        {"type": "text", "text": prompt},
-                    ],
+                    "content": build_message_content(visuals, prompt),
                 }
             ]
             inputs = processor.apply_chat_template(
@@ -369,11 +445,20 @@ def main() -> None:
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
                 "latency_seconds": time.perf_counter() - sample_started,
-                "image_sha256": row["image_sha256"],
-                "processed_image_size": [image.width, image.height],
                 "prompt_sha256": contract["prompt_sha256"],
                 "contract_sha256": contract_sha,
             }
+            if len(visuals) == 1:
+                result["image_sha256"] = visuals[0]["image_sha256"]
+                result["processed_image_size"] = [
+                    visuals[0]["image"].width,
+                    visuals[0]["image"].height,
+                ]
+            else:
+                result["image_sha256s"] = [visual["image_sha256"] for visual in visuals]
+                result["processed_image_sizes"] = [
+                    [visual["image"].width, visual["image"].height] for visual in visuals
+                ]
             completed_this_process += 1
             append_jsonl(
                 output_handle,
