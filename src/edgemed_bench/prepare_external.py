@@ -550,13 +550,16 @@ def build_slake_localization_surface(
     source_split: str,
     limit: int = 0,
     max_per_image: int = 2,
+    max_per_label: int = 0,
     seed: str = "edgemed-slake-localization-v1",
     area_min: float = 0.01,
     area_max: float = 0.64,
 ) -> dict[str, Any]:
     """Build question-to-box supervision without reading SLAKE VQA answers."""
-    if limit < 0 or max_per_image <= 0:
-        raise ValueError("limit must be non-negative and max_per_image must be positive")
+    if limit < 0 or max_per_image <= 0 or max_per_label < 0:
+        raise ValueError(
+            "limit/max_per_label must be non-negative and max_per_image must be positive"
+        )
     if not (0 < area_min <= area_max < 1):
         raise ValueError("Expected 0 < area_min <= area_max < 1")
     raw = json.loads(json_path.read_text(encoding="utf-8"))
@@ -616,11 +619,16 @@ def build_slake_localization_surface(
     candidates.sort(key=lambda row: (row["rank"], row["sample_id"]))
     selected: list[dict[str, Any]] = []
     per_image = Counter()
+    per_label = Counter()
     for row in candidates:
         if per_image[row["image_sha256"]] >= max_per_image:
             rejected["per_image_cap"] += 1
             continue
+        if max_per_label and per_label[row["normalized_label"]] >= max_per_label:
+            rejected["per_label_cap"] += 1
+            continue
         per_image[row["image_sha256"]] += 1
+        per_label[row["normalized_label"]] += 1
         selected.append(row)
         if limit and len(selected) == limit:
             break
@@ -673,6 +681,7 @@ def build_slake_localization_surface(
             "seed": seed,
             "limit": limit,
             "max_per_image": max_per_image,
+            "max_per_label": max_per_label,
             "question_language": "en",
             "matched_normalized_detection_labels": 1,
             "target_area_interval": [area_min, area_max],
@@ -797,6 +806,7 @@ def main() -> None:
     )
     slake_localization.add_argument("--limit", type=int, default=0)
     slake_localization.add_argument("--max-per-image", type=int, default=2)
+    slake_localization.add_argument("--max-per-label", type=int, default=0)
     slake_localization.add_argument("--seed", default="edgemed-slake-localization-v1")
     slake_localization.add_argument("--area-min", type=float, default=0.01)
     slake_localization.add_argument("--area-max", type=float, default=0.64)
@@ -838,6 +848,7 @@ def main() -> None:
             args.report,
             limit=args.limit,
             max_per_image=args.max_per_image,
+            max_per_label=args.max_per_label,
             seed=args.seed,
         )
     elif args.source == "slake-localization-surface":

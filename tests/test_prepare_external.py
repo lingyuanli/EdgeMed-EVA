@@ -284,6 +284,7 @@ def test_slake_localization_surface_uses_detection_without_vqa_answer(
         tmp_path / "report.json",
         source_split="train",
         max_per_image=1,
+        max_per_label=1,
     )
     inference_rows = read_jsonl(inference)
     target_rows = read_jsonl(targets)
@@ -296,4 +297,5 @@ def test_slake_localization_surface_uses_detection_without_vqa_answer(
     assert target_rows[0]["tool_call"]["arguments"]["media_id"] == "image-0"
     assert oct(targets.stat().st_mode & 0o777) == "0o600"
     assert report["selection"]["vqa_answer_read"] is False
+    assert report["selection"]["max_per_label"] == 1
     assert report["rejected"]["matched_label_count_not_one"] == 1
