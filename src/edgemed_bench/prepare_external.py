@@ -16,7 +16,7 @@ from collections import Counter
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from .io import append_jsonl, read_jsonl, reject_reference_fields, sha256_file, write_json
 
@@ -1085,6 +1085,129 @@ def build_slake_learned_crop_multiview_surface(
     return report
 
 
+def build_slake_oracle_pointer_surface(
+    full_path: Path,
+    locator_targets_path: Path,
+    surface_root: Path,
+    pointer_output: Path,
+    sham_output: Path,
+    report_path: Path,
+) -> dict[str, Any]:
+    """Draw correct or deterministically permuted boxes on otherwise identical full images."""
+    full_rows = read_jsonl(full_path)
+    reject_reference_fields(full_rows)
+    targets = read_jsonl(locator_targets_path)
+    target_by_id = {str(row["sample_id"]): row for row in targets}
+    sample_ids = [str(row["sample_id"]) for row in full_rows]
+    if (
+        len(sample_ids) < 2
+        or len(set(sample_ids)) != len(sample_ids)
+        or len(target_by_id) != len(targets)
+        or set(sample_ids) != set(target_by_id)
+    ):
+        raise ValueError("Pointer surface requires identical unique full/target ids")
+    sorted_ids = sorted(sample_ids)
+    sham_source = {
+        sample_id: sorted_ids[(index + 1) % len(sorted_ids)]
+        for index, sample_id in enumerate(sorted_ids)
+    }
+    pointer_root = surface_root / "oracle-pointer"
+    sham_root = surface_root / "sham-pointer"
+    pointer_root.mkdir(parents=True, exist_ok=True)
+    sham_root.mkdir(parents=True, exist_ok=True)
+    pointer_rows = []
+    sham_rows = []
+    artifact_hashes = {}
+
+    def draw_pointer(image: Image.Image, box: list[int]) -> Image.Image:
+        pointed = image.copy()
+        xyxy = (
+            math.floor(box[0] * image.width / 1000),
+            math.floor(box[1] * image.height / 1000),
+            max(0, math.ceil(box[2] * image.width / 1000) - 1),
+            max(0, math.ceil(box[3] * image.height / 1000) - 1),
+        )
+        width = max(2, round(min(image.size) * 0.008))
+        ImageDraw.Draw(pointed).rectangle(xyxy, outline=(255, 0, 0), width=width)
+        return pointed
+
+    for full in full_rows:
+        sample_id = str(full["sample_id"])
+        true_box = target_by_id[sample_id].get("region_xyxy_1000")
+        sham_box = target_by_id[sham_source[sample_id]].get("region_xyxy_1000")
+        for box, label in ((true_box, "oracle"), (sham_box, "sham")):
+            if (
+                not isinstance(box, list)
+                or len(box) != 4
+                or any(not isinstance(value, int) or value < 0 or value > 1000 for value in box)
+                or box[0] >= box[2]
+                or box[1] >= box[3]
+            ):
+                raise ValueError(f"Invalid {label} pointer box: {sample_id}")
+        source_path = surface_root / str(full["image_path"])
+        if not source_path.is_file() or sha256_file(source_path) != full.get("image_sha256"):
+            raise ValueError(f"Missing or changed pointer source image: {sample_id}")
+        with Image.open(source_path) as source:
+            image = source.convert("RGB")
+        artifact_id = hashlib.sha256(sample_id.encode()).hexdigest()
+        pointer_path = pointer_root / f"{artifact_id}.png"
+        sham_path = sham_root / f"{artifact_id}.png"
+        draw_pointer(image, true_box).save(pointer_path, format="PNG", optimize=False)
+        draw_pointer(image, sham_box).save(sham_path, format="PNG", optimize=False)
+        pointer_sha = sha256_file(pointer_path)
+        sham_sha = sha256_file(sham_path)
+        pointer_relative = f"oracle-pointer/{artifact_id}.png"
+        sham_relative = f"sham-pointer/{artifact_id}.png"
+        artifact_hashes[pointer_relative] = pointer_sha
+        artifact_hashes[sham_relative] = sham_sha
+        common = {
+            key: value
+            for key, value in full.items()
+            if key not in {"image_path", "image_sha256", "visual_arm"}
+        }
+        pointer_rows.append(
+            {
+                **common,
+                "image_path": pointer_relative,
+                "image_sha256": pointer_sha,
+                "visual_arm": "full-with-oracle-pointer",
+            }
+        )
+        sham_rows.append(
+            {
+                **common,
+                "image_path": sham_relative,
+                "image_sha256": sham_sha,
+                "visual_arm": "full-with-permuted-pointer",
+            }
+        )
+    reject_reference_fields(pointer_rows)
+    reject_reference_fields(sham_rows)
+    _write_jsonl(pointer_output, pointer_rows)
+    _write_jsonl(sham_output, sham_rows)
+    report = {
+        "schema_version": "edgemed-slake-oracle-pointer-surface/v1",
+        "written_per_arm": len(sample_ids),
+        "arms": ["full-with-oracle-pointer", "full-with-permuted-pointer"],
+        "pointer_style": {"color_rgb": [255, 0, 0], "width_fraction": 0.008, "min_width": 2},
+        "sham_assignment": "sorted-sample-id-rotate-one",
+        "source_hashes": {
+            "full_inference_sha256": sha256_file(full_path),
+            "locator_targets_sha256": sha256_file(locator_targets_path),
+            "pointer_inference_sha256": sha256_file(pointer_output),
+            "sham_inference_sha256": sha256_file(sham_output),
+        },
+        "artifact_hashes": dict(sorted(artifact_hashes.items())),
+        "leakage_boundary": {
+            "references_read": False,
+            "answers_read": False,
+            "oracle_boxes_used_only_for_pointer_materialization": True,
+        },
+    }
+    write_json(report_path, report)
+    return report
+
+
 def quarantine_gate_candidates(
     manifest_path: Path,
     gate_report_path: Path,
@@ -1208,6 +1331,13 @@ def main() -> None:
     learned_multiview.add_argument("--surface-root", type=Path, required=True)
     learned_multiview.add_argument("--output", type=Path, required=True)
     learned_multiview.add_argument("--report", type=Path, required=True)
+    oracle_pointer = subparsers.add_parser("slake-oracle-pointer-surface")
+    oracle_pointer.add_argument("--full", type=Path, required=True)
+    oracle_pointer.add_argument("--locator-targets", type=Path, required=True)
+    oracle_pointer.add_argument("--surface-root", type=Path, required=True)
+    oracle_pointer.add_argument("--pointer-output", type=Path, required=True)
+    oracle_pointer.add_argument("--sham-output", type=Path, required=True)
+    oracle_pointer.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
 
     if args.source == "pmc-vqa":
@@ -1292,6 +1422,15 @@ def main() -> None:
             args.locator_run_manifest,
             args.surface_root,
             args.output,
+            args.report,
+        )
+    elif args.source == "slake-oracle-pointer-surface":
+        report = build_slake_oracle_pointer_surface(
+            args.full,
+            args.locator_targets,
+            args.surface_root,
+            args.pointer_output,
+            args.sham_output,
             args.report,
         )
     else:

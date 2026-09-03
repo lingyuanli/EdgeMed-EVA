@@ -11,6 +11,7 @@ from edgemed_bench.prepare_external import (
     build_slake_learned_crop_multiview_surface,
     build_slake_localization_surface,
     build_slake_multiview_answer_surface,
+    build_slake_oracle_pointer_surface,
     build_slake_oracle_crop_answer_surface,
     build_pmc_vqa,
     build_slake,
@@ -496,3 +497,46 @@ def test_learned_crop_surface_binds_completed_locator_without_targets(tmp_path: 
         assert crop.getpixel((10, 10)) == (255, 0, 0)
     assert report["locator_binding"]["run_id"] == "locator-1"
     assert report["leakage_boundary"]["ground_truth_boxes_read"] is False
+
+
+def test_oracle_pointer_surface_uses_permuted_box_control(tmp_path: Path) -> None:
+    surface_root = tmp_path / "surface"
+    (surface_root / "full").mkdir(parents=True)
+    full_rows = []
+    target_rows = []
+    for sample_id, box in (("a", [100, 100, 400, 400]), ("b", [600, 600, 900, 900])):
+        image_path = surface_root / "full" / f"{sample_id}.png"
+        image_sha = make_image(image_path, "white")
+        full_rows.append(
+            {
+                "sample_id": sample_id,
+                "kind": "open",
+                "question": "Question?",
+                "task": "fixture",
+                "image_path": f"full/{sample_id}.png",
+                "image_sha256": image_sha,
+                "visual_arm": "full-image",
+            }
+        )
+        target_rows.append({"sample_id": sample_id, "region_xyxy_1000": box})
+    full_path = tmp_path / "full.jsonl"
+    target_path = tmp_path / "targets.jsonl"
+    full_path.write_text("\n".join(json.dumps(row) for row in full_rows) + "\n")
+    target_path.write_text("\n".join(json.dumps(row) for row in target_rows) + "\n")
+    pointer_output = tmp_path / "pointer.jsonl"
+    sham_output = tmp_path / "sham.jsonl"
+    report = build_slake_oracle_pointer_surface(
+        full_path,
+        target_path,
+        surface_root,
+        pointer_output,
+        sham_output,
+        tmp_path / "pointer-report.json",
+    )
+    pointer = read_jsonl(pointer_output)[0]
+    sham = read_jsonl(sham_output)[0]
+    assert pointer["image_sha256"] != sham["image_sha256"]
+    assert pointer["visual_arm"] == "full-with-oracle-pointer"
+    assert sham["visual_arm"] == "full-with-permuted-pointer"
+    assert report["sham_assignment"] == "sorted-sample-id-rotate-one"
+    assert report["leakage_boundary"]["answers_read"] is False
