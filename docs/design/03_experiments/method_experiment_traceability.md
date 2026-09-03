@@ -7,6 +7,7 @@
 | 跨视图/时间绑定 | 避免视图和时点混淆 | 去标签/打乱标签 | MSI/TP、shuffle sensitivity | 打乱不影响答案 | 多源证据整合 |
 | Grounded preference | 压制看似合理的视觉幻觉 | T2 vs T1b | unsupported rate、VA、GT | judge 分升、人工不升 | 视觉一致性优化 |
 | 选择性 crop | 获取关键局部细节 | 同 checkpoint no-tool/forced/oracle | Net Tool Effect、FDD | Call Harm 高、oracle 无收益 | Agent 工具贡献 |
+| Coarse-to-fine acquisition | 先看 overview 后定位，消除盲选全图框 | autonomous/direct/repeat/black | paired accuracy、targeted ROI、Call Gain/Harm | ROI 仍为全图，或 black/repeat 不退化 | 主动视觉获取净收益 |
 | 校准训练 | 让置信度反映错误风险 | 去 calibration loss | ECE/Brier/AURC | accuracy 不变且 ECE 变坏 | 可选择性预测 |
 | 4-bit 端侧部署 | 降低资源成本 | BF16/8-bit/4-bit | accuracy drop、latency、memory | 量化导致维度崩溃 | 端侧效率 |
 

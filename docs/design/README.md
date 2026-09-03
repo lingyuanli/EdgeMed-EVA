@@ -47,6 +47,7 @@ Video Agent 专项入口：
 - [用户提供 `base_video_agent` 行为审计](01_survey/base_video_agent_audit.md)
 - [医疗多模态 Agent M0 与评测闭环](02_method/medical_multimodal_agent_m0.md)
 - [Qwen3.5-4B Agent M1 真实运行与失败链](04_implementation/qwen_agent_m1_runtime.md)
+- [M2 coarse-to-fine 主动视觉获取协议](03_experiments/m2_coarse_to_fine_active_acquisition.md)
 
 ## 4. 从 AlphaResearcher-Bench 借用什么
 

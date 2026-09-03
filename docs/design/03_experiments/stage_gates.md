@@ -34,6 +34,8 @@
 
 通过条件：同一 checkpoint 的 Net Tool Effect 95% CI 下界 >0；compute-matched 对照不能解释全部增益；Call Harm 在预注册阈值内；Relevant ROI deletion 效应显著大于 Irrelevant ROI deletion。
 
+进入 Gate 5 效果评测前先过 operational 子门：overview-first 16/16 完成、E0 全 1、零失败工具，且至少 30% 样本产生面积 `[0.01,0.64]` 的非全图 ROI。该子门只检查策略是否实际执行，不得读取参考答案。
+
 失败后：Agent 降级为可选工程特性，不能作为核心科研卖点。
 
 ## Gate 6：在线 RL 可启动
