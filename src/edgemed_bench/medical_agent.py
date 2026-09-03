@@ -96,10 +96,12 @@ def run_medical_agent(
     reject_reference_fields([sample])
     if max_steps < 1:
         raise ValueError("max_steps must be positive")
-    if initial_visual_policy not in {"none", "overview"}:
+    if initial_visual_policy not in {"none", "overview", "overview_then_region"}:
         raise ValueError(f"Unknown initial_visual_policy: {initial_visual_policy}")
-    if initial_visual_policy == "overview" and "inspect_overview" not in allowed_tools:
+    if initial_visual_policy in {"overview", "overview_then_region"} and "inspect_overview" not in allowed_tools:
         raise ValueError("initial overview policy requires inspect_overview in allowed_tools")
+    if initial_visual_policy == "overview_then_region" and "region_inspect" not in allowed_tools:
+        raise ValueError("overview_then_region policy requires region_inspect in allowed_tools")
     executor = MedicalToolExecutor(
         sample=sample,
         data_root=data_root,
@@ -121,7 +123,7 @@ def run_medical_agent(
             },
         },
     ]
-    if initial_visual_policy == "overview":
+    if initial_visual_policy in {"overview", "overview_then_region"}:
         initial_call = {"name": "inspect_overview", "arguments": {"sample_count": 1}}
         messages.append(
             {
@@ -131,6 +133,20 @@ def run_medical_agent(
                 "policy_intervention": "initial_overview_required",
             }
         )
+        if initial_visual_policy == "overview_then_region":
+            messages.append(
+                {
+                    "role": "user",
+                    "content": {
+                        "controller_requirement": (
+                            "After inspecting the overview, call region_inspect exactly once. "
+                            "Choose a question-relevant box with normalized area in [0.01,0.64]; "
+                            "do not use the full frame and give a concrete target."
+                        )
+                    },
+                    "policy_intervention": "targeted_region_required",
+                }
+            )
         initial_result, initial_trace = executor.execute(
             initial_call["name"], initial_call["arguments"]
         )
@@ -156,6 +172,15 @@ def run_medical_agent(
         if tool_call is not None:
             assistant_message["tool_call"] = tool_call
         messages.append(assistant_message)
+        completed_region = any(
+            trace["status"] == "completed" and trace["tool_name"] == "region_inspect"
+            for trace in executor.traces
+        )
+        if initial_visual_policy == "overview_then_region" and not completed_region:
+            if not isinstance(tool_call, dict) or tool_call.get("name") != "region_inspect":
+                raise RuntimeError(
+                    "Forced targeted-region policy was not followed by the backend"
+                )
         if tool_call is None:
             has_visual_evidence = any(
                 trace["status"] == "completed" for trace in executor.traces

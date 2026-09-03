@@ -337,7 +337,9 @@ def main() -> None:
     parser.add_argument("--sample-id-file", type=Path)
     parser.add_argument("--max-steps", type=int, default=3)
     parser.add_argument(
-        "--initial-visual-policy", choices=("none", "overview"), default="none"
+        "--initial-visual-policy",
+        choices=("none", "overview", "overview_then_region"),
+        default="none",
     )
     parser.add_argument("--decision-max-new-tokens", type=int, default=192)
     parser.add_argument("--final-max-new-tokens", type=int, default=512)

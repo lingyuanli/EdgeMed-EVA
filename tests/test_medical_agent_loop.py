@@ -157,6 +157,22 @@ def test_initial_overview_requires_enabled_tool(tmp_path: Path) -> None:
         )
 
 
+def test_forced_region_policy_requires_backend_to_localize(tmp_path: Path) -> None:
+    class StopsAfterOverview:
+        def decide(self, messages, tools):
+            return {"content": "ready", "tool_call": None}
+
+        def finalize(self, messages, output_schema):
+            raise AssertionError("finalizer must not run")
+
+    with pytest.raises(RuntimeError, match="targeted-region policy was not followed"):
+        run_medical_agent(
+            _sample(tmp_path), StopsAfterOverview(), tmp_path, tmp_path / "artifacts",
+            allowed_tools=("inspect_overview", "region_inspect"), max_steps=2,
+            initial_visual_policy="overview_then_region",
+        )
+
+
 def test_inference_row_rejects_reference_fields(tmp_path: Path) -> None:
     sample = _sample(tmp_path)
     sample["answer"] = "A"
