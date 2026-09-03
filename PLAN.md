@@ -111,6 +111,7 @@
 | 2026-09-04 | M2 zero-shot crop 三路失败后，M3 监督 locator 通过独立 validation 定位门 | SLAKE detection 监督、train/validation 图像零重叠；64-step F1 QLoRA 将 mean IoU `0.1316→0.3299`、IoU@0.3 `16.28%→58.14%`，43/43 valid | 只建立定位能力；在 oracle-crop 优于 full/black 前，不接入 Agent 答案效果，不访问 Med-CMR |
 | 2026-09-04 | M3 crop-only 因果筛选失败，M4 global-local oracle 多视图通过 | crop-only 相对 full token F1 `-9.26`；full+oracle 相对 full `+7.59`（CI `[0.23,16.74]`），相对 full+black `+8.37`（CI `[0.47,18.60]`） | 冻结多视图协议；只将 oracle 框替换为 locator-64 预测框，执行 learned-crop deployability gate |
 | 2026-09-04 | M4 learned-crop validation 出现正向 pilot signal | token F1 `70.93%`；相对 full `+1.98`，相对 full+black `+2.76`；捕获 oracle 增量 26.06%，但 black 对照 CI 跨零 | 不进 Med-CMR；在零图像重叠的 45 条 SLAKE official test 上执行一次冻结 held-out 复现 |
+| 2026-09-04 | M4 SLAKE official test held-out 未复现 | locator 泛化到 mean IoU `0.3751`，但 learned-full 仅 `+1.31`、learned-black `+0.12` 且 CI 跨零；oracle-full `-2.00` | 冻结并停止 crop-fusion；不再用 SLAKE test 调参，开发新的单图 region-pointer 证据机制 |
 
 ## 7. External Development Gate Contract
 

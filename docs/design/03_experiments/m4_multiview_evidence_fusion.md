@@ -77,3 +77,18 @@ D 完成 43/43，token F1 为 `70.93%`，exact 为 `53.49%`，prediction SHA-256
 - 主要复现条件：learned - full 与 learned - black 的 token F1 点估计都大于 0，且方向与 validation 一致。
 - 强证据条件：上述两个 paired 95% CI 下界均大于 0。
 - 失败处理：无论结果如何，不按 test 单题或聚合结果继续调参；test 只运行一次并完整归档。
+
+### M4-S3 结果：未复现
+
+冻结的 locator 在 45 条 test 上完成 45/45、valid/targeted 均为 100%，mean IoU `0.3751`、IoU@0.3 `68.89%`、IoU@0.5 `33.33%`。这说明定位能力本身跨 split 保持，但答案因果增益没有闭合：
+
+| Arm | Normalized exact | Token F1 | Prediction SHA-256 |
+|---|---:|---:|---|
+| full | 55.56% | 68.54% | `e86df9382f2336de6ffbbbc30068579156fad08ee5d6cd01b34bc357a1823f06` |
+| full + black | 57.78% | 69.72% | `94519b551bf43f97265876d065960a3fddb57a86e439e78b83c1afac9d9bf7dc` |
+| full + learned | 57.78% | 69.84% | `028be341949d5c5ce0d36d2e6279e394d350c302ed0506b365b5b378b9905d3a` |
+| full + oracle | 55.56% | 66.54% | `675470012e432d0486b1e9a8da77c25f52e7538d2f83997af300529adfd7eece` |
+
+learned-full 为 `+1.31` token-F1 points，95% CI `[-6.26, 9.37]`；learned-black 仅 `+0.12`，95% CI `[-0.09, 0.44]`。oracle-full 为 `-2.00`，95% CI `[-11.35, 7.10]`。虽然两个 learned 点估计方向为正，但真实 learned crop 几乎不优于黑图，且 oracle 上界反向，不能支持局部视觉内容是增益来源。
+
+M4 判定为 `heldout_not_replicated`。不得以 validation 正结果或 test 的微小正点估计声称成功；crop-fusion 路线停止，SLAKE test 不再用于任何调参。后续新机制必须在开发 surface 上形成，并另找未使用的外部 held-out 复现。
