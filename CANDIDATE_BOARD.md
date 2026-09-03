@@ -18,6 +18,7 @@ Candidates are ranked by information gain, feasibility on one V100, test-compara
 | 8 | `m1b-evidence-sft` | brief | `m1a-answer-qlora` | explore | supervised objective / Tier2 | `held_evidence_gate` | Adds evidence behavior only after answer-domain adaptation is attributable | SLAKE admitted, but PMC captions are not eligible human visual-evidence targets | require audited evidence targets; do not train raw captions as observations |
 | 9 | `b2-selective-crop` | brief | `qwen35-4b-medcmr-b0` | explore | tool/system / Tier2 | `held_oracle_gate` | May improve SOD/FDD if native resolution is limiting | n/a | hold until an answer-blind oracle-crop study shows useful upper bound |
 | 10 | `b1-structured-json-v1` | implementation | `qwen35-4b-medcmr-b0` | exploit | prompt + representation / Tier1 | `smoke_failed` | Structured evidence, competing hypotheses, and answer | 14/14 completed but only 8/14 strict schema; 4 cardinality failures and 2 truncations | archive; do not rerun unchanged |
+| 11 | `m6-option-likelihood-decoder` | implementation | `qwen35-4b-medcmr-b0` | explore | decision rule / Tier1 | `pilot64_failed_archived` | Scores complete option texts without generating answer letters | 42.19% vs direct 57.81%; paired -15.63 points, CI entirely negative; invalid 0 | stop before 512; do not tune normalization from observed correctness |
 
 ## Historical Repair: B1 Evidence + Answer v2
 

@@ -113,6 +113,7 @@
 | 2026-09-04 | M4 learned-crop validation 出现正向 pilot signal | token F1 `70.93%`；相对 full `+1.98`，相对 full+black `+2.76`；捕获 oracle 增量 26.06%，但 black 对照 CI 跨零 | 不进 Med-CMR；在零图像重叠的 45 条 SLAKE official test 上执行一次冻结 held-out 复现 |
 | 2026-09-04 | M4 SLAKE official test held-out 未复现 | locator 泛化到 mean IoU `0.3751`，但 learned-full 仅 `+1.31`、learned-black `+0.12` 且 CI 跨零；oracle-full `-2.00` | 冻结并停止 crop-fusion；不再用 SLAKE test 调参，开发新的单图 region-pointer 证据机制 |
 | 2026-09-04 | M5 oracle region-pointer 未过严格因果门 | oracle-sham token F1 `+6.39`，但 CI `[-1.48,15.81]`；oracle-full `+2.68`，CI 同样跨零 | 不构建 learned pointer；回查 Med-CMR evidence 评分合同，确认空间定位是否值得作为独立优化目标 |
+| 2026-09-04 | M6 option-text likelihood decoder 64 条门失败 | 42.19% vs direct 57.81%，paired `-15.63`，CI `[-28.13,-3.13]`；invalid 虽为 0 | 停止 512 与事后 normalization 搜索；下一训练方向必须直接优化答案判别且混入 source-diverse 保持约束 |
 
 ## 7. External Development Gate Contract
 

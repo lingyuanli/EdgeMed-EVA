@@ -73,6 +73,7 @@
 - [x] locator-64 learned crop 在 validation 达到 `+1.98` token-F1 与 26.06% oracle 增量捕获；标记为 CI 未闭合的 pilot signal
 - [x] 45 条零重叠 SLAKE official test 一次性 held-out 完成；定位泛化但答案增益未复现，crop-fusion 路线关闭
 - [x] oracle region-pointer vs permuted sham 因果筛选完成；点估计 `+6.39` 但 CI 跨零，learned pointer 未获准
+- [x] option-text conditional-likelihood decoder 完成 4 条 smoke 与 64 条 pilot；相对 direct `-15.63`，按门停止 512
 
 ## Optimization Data Gate
 
