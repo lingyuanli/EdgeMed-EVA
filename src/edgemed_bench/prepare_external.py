@@ -848,7 +848,6 @@ def main() -> None:
             args.report,
             limit=args.limit,
             max_per_image=args.max_per_image,
-            max_per_label=args.max_per_label,
             seed=args.seed,
         )
     elif args.source == "slake-localization-surface":
@@ -861,6 +860,7 @@ def main() -> None:
             source_split=args.source_split,
             limit=args.limit,
             max_per_image=args.max_per_image,
+            max_per_label=args.max_per_label,
             seed=args.seed,
             area_min=args.area_min,
             area_max=args.area_max,
