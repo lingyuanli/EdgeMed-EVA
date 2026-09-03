@@ -11,6 +11,7 @@ from edgemed_bench.qwen_agent_backend import (
     LOCALIZATION_CONTRACT,
     build_decision_instruction,
     parse_json_object,
+    validate_adapter_source,
 )
 from edgemed_bench.run_medical_agent import normalize_agent_sample, run_agent_batch
 
@@ -201,3 +202,29 @@ def test_localization_contract_has_no_stop_or_answer_exit() -> None:
     assert '"name":"region_inspect"' in LOCALIZATION_CONTRACT
     assert "Do not return null" in LOCALIZATION_CONTRACT
     assert '"answer"' not in LOCALIZATION_CONTRACT
+
+
+def test_adapter_source_is_hash_and_path_bound(tmp_path: Path) -> None:
+    adapter = tmp_path / "adapter"
+    adapter.mkdir()
+    weights = adapter / "adapter_model.safetensors"
+    weights.write_bytes(b"adapter")
+    digest = __import__("hashlib").sha256(b"adapter").hexdigest()
+    source = tmp_path / "run_manifest.json"
+    source.write_text(
+        json.dumps(
+            {
+                "status": "completed",
+                "contract_sha256": "contract",
+                "adapter_hashes": {"adapter/adapter_model.safetensors": digest},
+            }
+        )
+    )
+    verified = validate_adapter_source(adapter, source)
+    assert verified["training_contract_sha256"] == "contract"
+    assert verified["adapter_hashes"] == {
+        "adapter/adapter_model.safetensors": digest
+    }
+    weights.write_bytes(b"changed")
+    with pytest.raises(ValueError, match="differs"):
+        validate_adapter_source(adapter, source)

@@ -103,6 +103,32 @@ def validate_model_source(model_path: Path, source_manifest_path: Path) -> dict[
     }
 
 
+def validate_adapter_source(
+    adapter_path: Path, source_manifest_path: Path
+) -> dict[str, Any]:
+    source = json.loads(source_manifest_path.read_text())
+    hashes = source.get("adapter_hashes")
+    if source.get("status") != "completed" or not isinstance(hashes, dict) or not hashes:
+        raise ValueError("Adapter source is not a completed hash-bound training run")
+    expected_path = (source_manifest_path.parent / "adapter").resolve()
+    if adapter_path.resolve() != expected_path:
+        raise ValueError("Adapter path is not bound to its source training run")
+    verified = {}
+    for relative_path, expected_sha256 in hashes.items():
+        path = (source_manifest_path.parent / relative_path).resolve()
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        actual_sha256 = sha256_file(path)
+        if actual_sha256 != expected_sha256:
+            raise ValueError(f"Adapter artifact differs from source manifest: {relative_path}")
+        verified[relative_path] = actual_sha256
+    return {
+        "training_contract_sha256": source.get("contract_sha256"),
+        "source_manifest_sha256": sha256_file(source_manifest_path),
+        "adapter_hashes": verified,
+    }
+
+
 class Qwen35MedicalAgentBackend:
     def __init__(
         self,
@@ -113,6 +139,8 @@ class Qwen35MedicalAgentBackend:
         final_max_new_tokens: int = 512,
         max_image_pixels: int = 786_432,
         verify_weights: bool = True,
+        adapter_path: Path | None = None,
+        adapter_source_manifest: Path | None = None,
     ) -> None:
         import accelerate
         import bitsandbytes
@@ -124,6 +152,10 @@ class Qwen35MedicalAgentBackend:
             raise RuntimeError("CUDA is required for the Qwen Agent backend")
         if torch.cuda.get_device_capability(0) != (7, 0):
             raise RuntimeError(f"Expected V100 SM70, got {torch.cuda.get_device_capability(0)}")
+        if (adapter_path is None) != (adapter_source_manifest is None):
+            raise ValueError(
+                "adapter_path and adapter_source_manifest must be provided together"
+            )
         self.model_path = model_path.resolve()
         self.model_source_manifest = model_source_manifest.resolve()
         self.decision_max_new_tokens = decision_max_new_tokens
@@ -134,6 +166,11 @@ class Qwen35MedicalAgentBackend:
             validate_model_source(self.model_path, self.model_source_manifest)
             if verify_weights
             else {"source_manifest_sha256": sha256_file(self.model_source_manifest)}
+        )
+        adapter_source = (
+            validate_adapter_source(adapter_path, adapter_source_manifest)
+            if adapter_path is not None and adapter_source_manifest is not None
+            else None
         )
         quantization = BitsAndBytesConfig(
             load_in_4bit=True,
@@ -152,6 +189,13 @@ class Qwen35MedicalAgentBackend:
             attn_implementation="eager",
             low_cpu_mem_usage=True,
         )
+        if adapter_path is not None:
+            import peft
+            from peft import PeftModel
+
+            self.model = PeftModel.from_pretrained(
+                self.model, adapter_path, is_trainable=False
+            )
         self.model.eval()
         torch.cuda.synchronize()
         torch.cuda.reset_peak_memory_stats()
@@ -191,6 +235,9 @@ class Qwen35MedicalAgentBackend:
                 "capability": list(torch.cuda.get_device_capability(0)),
             },
         }
+        if adapter_source is not None:
+            self.receipt["adapter_source"] = adapter_source
+            self.receipt["environment"]["peft"] = peft.__version__
 
     def runtime_summary(self) -> dict[str, Any]:
         """Return live CUDA memory evidence without changing inference behavior."""

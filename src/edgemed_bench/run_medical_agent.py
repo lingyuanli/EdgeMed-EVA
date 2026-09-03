@@ -332,6 +332,8 @@ def main() -> None:
     parser.add_argument("--data-root", type=Path, required=True)
     parser.add_argument("--model-path", type=Path, required=True)
     parser.add_argument("--model-source-manifest", type=Path, required=True)
+    parser.add_argument("--adapter-path", type=Path)
+    parser.add_argument("--adapter-source-manifest", type=Path)
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--sample-id-file", type=Path)
@@ -369,6 +371,8 @@ def main() -> None:
         final_max_new_tokens=args.final_max_new_tokens,
         max_image_pixels=args.max_image_pixels,
         verify_weights=not args.skip_weight_verification,
+        adapter_path=args.adapter_path,
+        adapter_source_manifest=args.adapter_source_manifest,
     )
     contract = {
         "stage": "m1-operational-smoke",
@@ -388,6 +392,8 @@ def main() -> None:
         "max_steps": args.max_steps,
         "initial_visual_policy": args.initial_visual_policy,
     }
+    if args.adapter_path is not None:
+        contract["adapter_source"] = backend.receipt["adapter_source"]
     manifest = run_agent_batch(
         rows,
         backend,
