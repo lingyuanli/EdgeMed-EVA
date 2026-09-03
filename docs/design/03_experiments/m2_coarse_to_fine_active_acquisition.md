@@ -1,6 +1,6 @@
 # M2：Coarse-to-Fine Active Visual Acquisition
 
-状态：`P1 AUTONOMOUS BLOCKED / P2 FORCED-LOCALIZER SCREEN NEXT / EFFICACY UNMEASURED`
+状态：`P1 AUTONOMOUS BLOCKED / P2 GENERIC FORCING BLOCKED / P3 DEDICATED LOCATOR NEXT / EFFICACY UNMEASURED`
 
 日期：2026-09-04
 
@@ -64,6 +64,22 @@ P1 只有在相对 D0 和 P0 的点估计均为正、E0 不退化、工具失败
 P1 在冻结 16 条上若因“模型看完 overview 后全部停止”而未过 targeted ROI 子门，只允许增加一个单变量诊断臂 `P2 overview_then_region`：同一 overview 后明确要求 backend 输出一次面积 `[0.01,0.64]` 的 question-conditioned region。controller 不替模型猜框；backend 返回 null、其他工具或非法框均失败并留痕。
 
 P2 的 16 条晋级门更严格：16/16 完成、E0 全 1、零失败工具、targeted ROI rate ≥80%。P2 通过只证明 4B 在明确约束下具有定位能力上界，不证明工具有效；通过后才允许在 96 条上与 D0/P0 比较。P2 未通过则停止 zero-shot crop policy，转入有独立 ROI 监督的 tool-policy SFT 数据设计。
+
+P2 已在首条样本失败。将 controller requirement 提升到决策指令最高优先级后，同一首条最小重现仍输出 `{"content":"evidence is sufficient","tool_call":null}`。这说明带可选 null 出口的通用 decision schema 不能在当前 4B 上可靠承担强制定位；它不是 crop 工具故障，也不是正确率结论。完整负结果见 `baselines/local/qwen35-4b-medical-agent-m2/attempts/slake-forced-region-generic-block.md`。
+
+### M2-S0c：P3 路由—定位解耦的 dedicated locator
+
+P3 是 P2 失败后最后一个 zero-shot 定位诊断。controller 仍先确定性获取 overview，随后调用独立 `localize` contract；该 contract 只允许返回一次 `region_inspect`，没有 null、答案或诊断出口。定位结束后直接进入同一 finalizer，因此每条仍为两次模型调用（locator + final），不会比 P1 的 decision + final 多一次语言模型调用。唯一方法变化是把“是否调用工具”的路由和“框在哪里”的定位从同一生成 schema 中拆开。
+
+执行顺序与门禁冻结如下：
+
+1. 先跑同一冻结顺序的第 1 条，不读 reference；必须完成 overview + targeted region，且 region 面积在 `[0.01,0.64]`；
+2. 第 1 条通过才新建 16 条 run；不得 resume P2 的失败 run；
+3. 16 条晋级门保持 16/16 完成、E0 全 1、零失败工具、targeted ROI rate ≥80%；
+4. 通过只建立“专用契约可执行”的 operational 上界；未通过即停止 zero-shot crop 路线，进入带独立 ROI 监督的 locator SFT 数据设计；
+5. 只有 16 条门通过后，才允许新建 96 条 paired efficacy run 并读取 reference 评分。
+
+P3 的定位输出和策略注入必须在 trajectory 中分别记为 `phase=localize` 与 `dedicated_region_localizer`；prompt contract 哈希必须同时绑定 decision、localization 和 final 三个契约。
 
 ### M2-S2：视觉因果与 compute matching
 
