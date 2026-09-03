@@ -108,6 +108,7 @@
 | 2026-09-02 | M1 real preflight-1 在单 V100 完成推理但被 E0 门阻断 | 模型 revision/两片权重哈希通过，1/1 inference 与 region tool 完成；final 使用 `id` 而非 `evidence_id`，并输出错误字段类型，scorer 得到 schema/citation 0、trace binding 1 | verifier 正确 `BLOCK`；正确选项不作效果结论。只增强 final schema 字段/类型/枚举提示与 scorer 检查，工具、样本、解码和答案策略不变，以新 commit/run 重试 |
 | 2026-09-02 | M1 schema-v2 单样本通过，8 条放大运行连续暴露证据状态机与 cross-field 错误 | 单样本 E0 全 1；首个 smoke8 在 6/8 后因第 7 条首步无工具而停止；强制 overview 后 8/8 完成但 overview evidence 错填全图 region，E0 schema 仅 7/8 | 两次失败 run 均保留；增加显式 first-acquisition policy、commit-bound resume 和带原值日志的非 region 坐标 canonicalization；不修改答案或参考数据 |
 | 2026-09-02 | M1 单 V100 8 条 real-model operational closure 通过 | commit `6de6909` 下 8/8 inference、8/8 工具、E0 三项全 1，verifier 七项全 PASS；峰值 allocated/reserved 3,562.7/3,946 MiB；仅一条 policy intervention 与一条结构归一化 | 只确认运行、证据绑定和评测闭环；E1 3/8 不是 efficacy 结论，E2 无框、E3/医学正确性 DEFER。PMC-512 对该家族继续只作 analysis/smoke，不再用于答案策略调参 |
+| 2026-09-04 | M2 zero-shot crop 三路失败后，M3 监督 locator 通过独立 validation 定位门 | SLAKE detection 监督、train/validation 图像零重叠；64-step F1 QLoRA 将 mean IoU `0.1316→0.3299`、IoU@0.3 `16.28%→58.14%`，43/43 valid | 只建立定位能力；在 oracle-crop 优于 full/black 前，不接入 Agent 答案效果，不访问 Med-CMR |
 
 ## 7. External Development Gate Contract
 

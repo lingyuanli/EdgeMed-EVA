@@ -1,6 +1,6 @@
 # M3：SLAKE-Supervised Region Locator
 
-状态：`SURFACES FROZEN / 2-STEP QLORA SMOKE NEXT / ANSWER EFFICACY UNMEASURED`
+状态：`LOCATOR PILOT PASSED / ORACLE-CROP ANSWER CAUSAL SCREEN NEXT`
 
 日期：2026-09-04
 
@@ -52,6 +52,17 @@ train/validation 的 image SHA 和 sample id 交集均为 0。inference 文件�
 首次 64-step 输出已触发上述一次 format repair 权限：43 条中 24 条被判 invalid；固定首条最小重现显示模型实际给出合法坐标 `[577,577,800,700]`，但把本应恒定的工具名生成为 `inspect Pneumonia`。因此失败可归因于冗余常量字段，而非该条缺失坐标。
 
 冻结修复 `M3-F1`：localizer 只生成 `{content, arguments}`，专用 controller 确定性封装 `name=region_inspect`。它不修复、裁剪或替换模型坐标，也不读取 target；图像、问题、训练选择、64 steps、seed 和超参数全部保持不变。由于 prompt/target contract 已变化，旧 base 和旧 adapter 结果只保留为诊断，F1 必须用新 commit 新建 base 与训练 run。F1 若仍未同时通过 valid/targeted、mean IoU 和 IoU@0.3 门，M3 停止，不允许第二次格式修复或增加训练步数。
+
+F1 已通过。64-step 训练 run `qwen35-4b-slake-locator-f1-qlora-pilot64-s20260904` 完成 64/64 optimizer steps、128 examples，loss 全有限，mean/last `0.4940/0.4315`，峰值 CUDA `9,991.86 MiB`，adapter SHA-256 `ee865dd6871fc7da796af3c6ecc7abfe73b2e85fc33e817e0d8c3ee976e947fb`。
+
+冻结 43 条 validation 对照：
+
+| Arm | Valid | Targeted | Mean IoU | IoU@0.3 | IoU@0.5 | Prediction SHA-256 |
+|---|---:|---:|---:|---:|---:|---|
+| F1 base | 100% | 72.09% | 0.1316 | 16.28% | 2.33% | `03c3e55220d63aea9d62b8933ee1316400a6d10087abedf066dcba11d282269e` |
+| F1 locator-64 | 100% | 97.67% | 0.3299 | 58.14% | 25.58% | `80ca593a350b7a1ad353852bcdf0be1e25b35e144f296bd24e4d5c6ad61926a0` |
+
+paired mean IoU `+0.1983`，IoU@0.3 `+41.86` points；34 条提高、2 条相同、7 条下降。满足 43/43、valid/targeted、mean IoU 与 IoU@0.3 的全部预注册门。该结论只限 question-conditioned 定位，不是答案或 Med-CMR 增益。
 
 ### M3-S2：先证实 crop 有用，再谈 Agent 效果
 

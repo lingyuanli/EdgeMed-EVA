@@ -65,6 +65,10 @@
 - [x] 单 V100、8 条 answer-blind real-model operational smoke 完成；E0 全 1、8/8 工具成功、峰值显存收据已绑定
 - [ ] source-diverse 开发集上的 no-tool/tool/forced/oracle/compute-matched 对照完成
 - [ ] 工具净收益与 evidence dependency 通过多 seed/干预门
+- [x] SLAKE train detection 构建答案隔离的 locator surface；与 validation 图像 SHA 零重叠
+- [x] 单 V100 locator QLoRA 2-step save/reload smoke 与 64-step pilot 完成
+- [x] locator-64 在 43 张未见图像上通过定位门：mean IoU 0.3299、IoU@0.3 58.14%
+- [ ] full/oracle-crop/black-crop 答案因果筛选通过
 
 ## Optimization Data Gate
 
