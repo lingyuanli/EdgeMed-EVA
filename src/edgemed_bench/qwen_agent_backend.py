@@ -352,7 +352,10 @@ class Qwen35MedicalAgentBackend:
         )
         tool_call = parsed.get("tool_call")
         if not isinstance(tool_call, dict) or tool_call.get("name") != "region_inspect":
-            raise ValueError("Dedicated localizer did not return region_inspect")
+            raise ValueError(
+                "Dedicated localizer did not return region_inspect: "
+                + json.dumps(parsed, ensure_ascii=False, sort_keys=True)
+            )
         if not isinstance(tool_call.get("arguments"), dict):
             raise ValueError("Dedicated localizer returned invalid arguments")
         parsed["_model_call"] = call
