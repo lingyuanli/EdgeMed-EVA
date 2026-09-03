@@ -1,6 +1,6 @@
 # M2：Coarse-to-Fine Active Visual Acquisition
 
-状态：`PROTOCOL LOCKED / OPERATIONAL SCREEN NEXT / EFFICACY UNMEASURED`
+状态：`P1 AUTONOMOUS BLOCKED / P2 FORCED-LOCALIZER SCREEN NEXT / EFFICACY UNMEASURED`
 
 日期：2026-09-04
 
@@ -58,6 +58,12 @@ M1 的 8 条真实模型 smoke 中，7 次 `region_inspect` 都使用 `[0,0,1000
 主指标是 paired exact accuracy；同时报告 schema、targeted ROI rate、Call Gain、Call Harm、模型调用数、视觉 artifact 像素、token、延迟和峰值显存。S1 是开发筛选，不触碰 Med-CMR。
 
 P1 只有在相对 D0 和 P0 的点估计均为正、E0 不退化、工具失败为 0 时，才进入因果臂。95% CI 跨零时只能称 candidate，不能称突破已证实。
+
+### M2-S0b：P1 失败后的 forced-localizer 上界
+
+P1 在冻结 16 条上若因“模型看完 overview 后全部停止”而未过 targeted ROI 子门，只允许增加一个单变量诊断臂 `P2 overview_then_region`：同一 overview 后明确要求 backend 输出一次面积 `[0.01,0.64]` 的 question-conditioned region。controller 不替模型猜框；backend 返回 null、其他工具或非法框均失败并留痕。
+
+P2 的 16 条晋级门更严格：16/16 完成、E0 全 1、零失败工具、targeted ROI rate ≥80%。P2 通过只证明 4B 在明确约束下具有定位能力上界，不证明工具有效；通过后才允许在 96 条上与 D0/P0 比较。P2 未通过则停止 zero-shot crop policy，转入有独立 ROI 监督的 tool-policy SFT 数据设计。
 
 ### M2-S2：视觉因果与 compute matching
 
