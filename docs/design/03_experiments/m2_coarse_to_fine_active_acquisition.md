@@ -1,6 +1,6 @@
 # M2：Coarse-to-Fine Active Visual Acquisition
 
-状态：`P1 AUTONOMOUS BLOCKED / P2 GENERIC FORCING BLOCKED / P3 DEDICATED LOCATOR NEXT / EFFICACY UNMEASURED`
+状态：`P1/P2/P3 ZERO-SHOT LOCALIZATION BLOCKED / EFFICACY NOT RUN / HANDOFF TO M3 SUPERVISED LOCATOR`
 
 日期：2026-09-04
 
@@ -80,6 +80,8 @@ P3 是 P2 失败后最后一个 zero-shot 定位诊断。controller 仍先确定
 5. 只有 16 条门通过后，才允许新建 96 条 paired efficacy run 并读取 reference 评分。
 
 P3 的定位输出和策略注入必须在 trajectory 中分别记为 `phase=localize` 与 `dedicated_region_localizer`；prompt contract 哈希必须同时绑定 decision、localization 和 final 三个契约。
+
+P3 已按上述第 1 条门禁运行并停止。run `qwen35-4b-medical-agent-m2-slake1-dedicated-localizer-20260904` 在 commit `bd73ef9b216d9c544f5af26c11b3c2e9ddd6624f` 上完成 1/1 inference，overview/region 工具均成功且 E0 全 1，但 localizer 输出 `[0,0,1000,1000]`，ROI area `1.0`，targeted rate `0/1`，reference-free analyzer 判定 `BLOCK`。因此没有执行 16/96 条扩展，也没有读取该题 reference。zero-shot crop prompt 路线到此关闭；后继路线见 `m3_supervised_region_locator.md`。
 
 ### M2-S2：视觉因果与 compute matching
 
