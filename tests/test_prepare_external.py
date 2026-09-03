@@ -8,6 +8,7 @@ from PIL import Image
 
 from edgemed_bench.io import read_jsonl
 from edgemed_bench.prepare_external import (
+    build_slake_localization_surface,
     build_pmc_vqa,
     build_slake,
     build_slake_binary_surface,
@@ -240,3 +241,59 @@ def test_slake_binary_surface_selection_is_question_only_and_reference_isolated(
     assert oct(output_references.stat().st_mode & 0o777) == "0o600"
     assert report["selection"]["answer_blind"] is True
     assert report["eligible_before_image_cap"] == 1
+
+
+def test_slake_localization_surface_uses_detection_without_vqa_answer(
+    tmp_path: Path,
+) -> None:
+    image_root = tmp_path / "imgs"
+    image_path = image_root / "xmlab1" / "source.jpg"
+    image_path.parent.mkdir(parents=True)
+    Image.new("RGB", (100, 200), "gray").save(image_path)
+    (image_path.parent / "detection.json").write_text(
+        json.dumps([{"Liver": [10, 20, 40, 60]}])
+    )
+    source = tmp_path / "train.json"
+    source.write_text(
+        json.dumps(
+            [
+                {
+                    "qid": 7,
+                    "img_name": "xmlab1/source.jpg",
+                    "question": "Does the liver look normal?",
+                    "answer": "SECRET",
+                    "q_lang": "en",
+                },
+                {
+                    "qid": 8,
+                    "img_name": "xmlab1/source.jpg",
+                    "question": "What modality is shown?",
+                    "answer": "ALSO_SECRET",
+                    "q_lang": "en",
+                },
+            ]
+        )
+    )
+    inference = tmp_path / "inference.jsonl"
+    targets = tmp_path / "targets.jsonl"
+    report = build_slake_localization_surface(
+        source,
+        image_root,
+        inference,
+        targets,
+        tmp_path / "report.json",
+        source_split="train",
+        max_per_image=1,
+    )
+    inference_rows = read_jsonl(inference)
+    target_rows = read_jsonl(targets)
+    assert len(inference_rows) == len(target_rows) == 1
+    assert inference_rows[0]["sample_id"] == "slake-train-locator-7"
+    assert "answer" not in inference_rows[0]
+    assert "region_xyxy_1000" not in inference_rows[0]
+    assert target_rows[0]["target_label"] == "Liver"
+    assert target_rows[0]["region_xyxy_1000"] == [100, 100, 500, 400]
+    assert target_rows[0]["tool_call"]["arguments"]["media_id"] == "image-0"
+    assert oct(targets.stat().st_mode & 0o777) == "0o600"
+    assert report["selection"]["vqa_answer_read"] is False
+    assert report["rejected"]["matched_label_count_not_one"] == 1

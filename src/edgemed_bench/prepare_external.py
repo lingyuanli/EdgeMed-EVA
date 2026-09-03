@@ -6,6 +6,7 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -14,6 +15,8 @@ import zipfile
 from collections import Counter
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
+
+from PIL import Image
 
 from .io import append_jsonl, read_jsonl, reject_reference_fields, sha256_file, write_json
 
@@ -487,6 +490,219 @@ def build_slake_binary_surface(
     return report
 
 
+def _slake_detection_groups(
+    detection_rows: Any, question: str
+) -> dict[str, list[tuple[str, list[float]]]]:
+    groups: dict[str, list[tuple[str, list[float]]]] = {}
+    normalized_question = _normalized_question(question)
+    if not isinstance(detection_rows, list):
+        return groups
+    for item in detection_rows:
+        if not isinstance(item, dict):
+            continue
+        for label, box in item.items():
+            normalized_label = _normalized_question(str(label))
+            if not normalized_label or normalized_label not in normalized_question:
+                continue
+            if (
+                not isinstance(box, list)
+                or len(box) != 4
+                or any(not isinstance(value, (int, float)) for value in box)
+            ):
+                continue
+            numeric_box = [float(value) for value in box]
+            if not all(math.isfinite(value) for value in numeric_box):
+                continue
+            x, y, width, height = numeric_box
+            if x < 0 or y < 0 or width <= 0 or height <= 0:
+                continue
+            groups.setdefault(normalized_label, []).append((str(label), numeric_box))
+    return groups
+
+
+def _normalize_detection_union(
+    detections: list[tuple[str, list[float]]], image_width: int, image_height: int
+) -> list[int]:
+    if image_width <= 0 or image_height <= 0 or not detections:
+        raise ValueError("Cannot normalize an empty detection group or empty image")
+    x1 = min(box[0] for _, box in detections)
+    y1 = min(box[1] for _, box in detections)
+    x2 = max(box[0] + box[2] for _, box in detections)
+    y2 = max(box[1] + box[3] for _, box in detections)
+    normalized = [
+        max(0, min(1000, math.floor(1000 * x1 / image_width))),
+        max(0, min(1000, math.floor(1000 * y1 / image_height))),
+        max(0, min(1000, math.ceil(1000 * x2 / image_width))),
+        max(0, min(1000, math.ceil(1000 * y2 / image_height))),
+    ]
+    if normalized[0] >= normalized[2] or normalized[1] >= normalized[3]:
+        raise ValueError("Normalized detection union is empty")
+    return normalized
+
+
+def build_slake_localization_surface(
+    json_path: Path,
+    image_root: Path,
+    inference_output: Path,
+    targets_output: Path,
+    report_path: Path,
+    *,
+    source_split: str,
+    limit: int = 0,
+    max_per_image: int = 2,
+    seed: str = "edgemed-slake-localization-v1",
+    area_min: float = 0.01,
+    area_max: float = 0.64,
+) -> dict[str, Any]:
+    """Build question-to-box supervision without reading SLAKE VQA answers."""
+    if limit < 0 or max_per_image <= 0:
+        raise ValueError("limit must be non-negative and max_per_image must be positive")
+    if not (0 < area_min <= area_max < 1):
+        raise ValueError("Expected 0 < area_min <= area_max < 1")
+    raw = json.loads(json_path.read_text(encoding="utf-8"))
+    if not isinstance(raw, list):
+        raise TypeError("SLAKE localization source must be a JSON array")
+
+    candidates: list[dict[str, Any]] = []
+    rejected = Counter()
+    for source_index, row in enumerate(raw):
+        if not isinstance(row, dict):
+            rejected["not_object"] += 1
+            continue
+        if row.get("q_lang") != "en":
+            rejected["not_english"] += 1
+            continue
+        image_name = str(row.get("img_name") or "").strip()
+        question = str(row.get("question") or "").strip()
+        relative_image_path = _safe_relative_path(image_name)
+        if relative_image_path is None or not question:
+            rejected["missing_or_unsafe_input"] += 1
+            continue
+        image_path = image_root / relative_image_path
+        detection_path = image_path.parent / "detection.json"
+        if not image_path.is_file() or not detection_path.is_file():
+            rejected["missing_image_or_detection"] += 1
+            continue
+        groups = _slake_detection_groups(
+            json.loads(detection_path.read_text(encoding="utf-8")), question
+        )
+        if len(groups) != 1:
+            rejected["matched_label_count_not_one"] += 1
+            continue
+        normalized_label, detections = next(iter(groups.items()))
+        with Image.open(image_path) as image:
+            region = _normalize_detection_union(detections, image.width, image.height)
+        area = (region[2] - region[0]) * (region[3] - region[1]) / 1_000_000
+        if area < area_min or area > area_max:
+            rejected["outside_area_interval"] += 1
+            continue
+        source_id = str(row.get("qid", source_index))
+        label = detections[0][0]
+        candidates.append(
+            {
+                "sample_id": f"slake-{source_split}-locator-{source_id}",
+                "source_record_id": source_id,
+                "question": question,
+                "image_path": image_name,
+                "image_sha256": sha256_file(image_path),
+                "target_label": label,
+                "normalized_label": normalized_label,
+                "region_xyxy_1000": region,
+                "region_area": area,
+                "rank": _selection_key(seed, source_id),
+            }
+        )
+
+    candidates.sort(key=lambda row: (row["rank"], row["sample_id"]))
+    selected: list[dict[str, Any]] = []
+    per_image = Counter()
+    for row in candidates:
+        if per_image[row["image_sha256"]] >= max_per_image:
+            rejected["per_image_cap"] += 1
+            continue
+        per_image[row["image_sha256"]] += 1
+        selected.append(row)
+        if limit and len(selected) == limit:
+            break
+    if not selected:
+        raise ValueError("No SLAKE localization records selected")
+    if limit and len(selected) != limit:
+        raise ValueError(f"Requested {limit} rows but selected {len(selected)}")
+
+    inference_rows = []
+    target_rows = []
+    for row in selected:
+        inference_rows.append(
+            {
+                "sample_id": row["sample_id"],
+                "kind": "localization",
+                "question": row["question"],
+                "image_path": row["image_path"],
+                "image_sha256": row["image_sha256"],
+                "task": "slake-question-conditioned-localization",
+                "source_dataset": "BoKelvin/SLAKE",
+                "source_version": SLAKE_REVISION,
+                "source_split": source_split,
+                "source_record_id": row["source_record_id"],
+            }
+        )
+        target_rows.append(
+            {
+                "sample_id": row["sample_id"],
+                "target_label": row["target_label"],
+                "region_xyxy_1000": row["region_xyxy_1000"],
+                "tool_call": {
+                    "name": "region_inspect",
+                    "arguments": {
+                        "media_id": "image-0",
+                        "region_xyxy_1000": row["region_xyxy_1000"],
+                        "target": row["target_label"],
+                    },
+                },
+            }
+        )
+    reject_reference_fields(inference_rows)
+    _write_jsonl(inference_output, inference_rows)
+    _write_jsonl(targets_output, target_rows, mode=0o600)
+    report = {
+        "schema_version": "edgemed-slake-localization-surface/v1",
+        "source_dataset": "BoKelvin/SLAKE",
+        "source_version": SLAKE_REVISION,
+        "source_split": source_split,
+        "selection": {
+            "seed": seed,
+            "limit": limit,
+            "max_per_image": max_per_image,
+            "question_language": "en",
+            "matched_normalized_detection_labels": 1,
+            "target_area_interval": [area_min, area_max],
+            "vqa_answer_read": False,
+        },
+        "eligible_before_cap": len(candidates),
+        "written": len(inference_rows),
+        "unique_images": len(per_image),
+        "target_labels": dict(sorted(Counter(row["target_label"] for row in selected).items())),
+        "target_area": {
+            "minimum": min(row["region_area"] for row in selected),
+            "maximum": max(row["region_area"] for row in selected),
+            "mean": sum(row["region_area"] for row in selected) / len(selected),
+        },
+        "rejected": dict(sorted(rejected.items())),
+        "source_hashes": {
+            "source_json_sha256": sha256_file(json_path),
+            "inference_manifest_sha256": sha256_file(inference_output),
+            "targets_sha256": sha256_file(targets_output),
+        },
+        "leakage_boundary": {
+            "selection_fields": ["q_lang", "img_name", "question", "detection.json"],
+            "inference_has_target_fields": False,
+            "targets_mode": "0600",
+        },
+    }
+    write_json(report_path, report)
+    return report
+
+
 def quarantine_gate_candidates(
     manifest_path: Path,
     gate_report_path: Path,
@@ -570,6 +786,20 @@ def main() -> None:
     slake_binary.add_argument("--limit", type=int, default=96)
     slake_binary.add_argument("--max-per-image", type=int, default=1)
     slake_binary.add_argument("--seed", default="edgemed-slake-binary-v1")
+    slake_localization = subparsers.add_parser("slake-localization-surface")
+    slake_localization.add_argument("--json", type=Path, required=True)
+    slake_localization.add_argument("--image-root", type=Path, required=True)
+    slake_localization.add_argument("--inference-output", type=Path, required=True)
+    slake_localization.add_argument("--targets-output", type=Path, required=True)
+    slake_localization.add_argument("--report", type=Path, required=True)
+    slake_localization.add_argument(
+        "--source-split", choices=("train", "validation", "test"), required=True
+    )
+    slake_localization.add_argument("--limit", type=int, default=0)
+    slake_localization.add_argument("--max-per-image", type=int, default=2)
+    slake_localization.add_argument("--seed", default="edgemed-slake-localization-v1")
+    slake_localization.add_argument("--area-min", type=float, default=0.01)
+    slake_localization.add_argument("--area-max", type=float, default=0.64)
     args = parser.parse_args()
 
     if args.source == "pmc-vqa":
@@ -609,6 +839,20 @@ def main() -> None:
             limit=args.limit,
             max_per_image=args.max_per_image,
             seed=args.seed,
+        )
+    elif args.source == "slake-localization-surface":
+        report = build_slake_localization_surface(
+            args.json,
+            args.image_root,
+            args.inference_output,
+            args.targets_output,
+            args.report,
+            source_split=args.source_split,
+            limit=args.limit,
+            max_per_image=args.max_per_image,
+            seed=args.seed,
+            area_min=args.area_min,
+            area_max=args.area_max,
         )
     else:
         report = quarantine_gate_candidates(
