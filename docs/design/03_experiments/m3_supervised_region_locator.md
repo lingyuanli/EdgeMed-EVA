@@ -49,6 +49,10 @@ train/validation 的 image SHA 和 sample id 交集均为 0。inference 文件�
 
 首个 64-step pilot 只有同时满足以下条件才晋级：43/43 完成；valid/targeted rate ≥95%；相对 base 的 mean IoU 和 IoU@0.3 均提高；IoU@0.3 ≥40%。未通过不得搜索 seed；只允许从冻结错误类型中判定一次 objective/format 修复。
 
+首次 64-step 输出已触发上述一次 format repair 权限：43 条中 24 条被判 invalid；固定首条最小重现显示模型实际给出合法坐标 `[577,577,800,700]`，但把本应恒定的工具名生成为 `inspect Pneumonia`。因此失败可归因于冗余常量字段，而非该条缺失坐标。
+
+冻结修复 `M3-F1`：localizer 只生成 `{content, arguments}`，专用 controller 确定性封装 `name=region_inspect`。它不修复、裁剪或替换模型坐标，也不读取 target；图像、问题、训练选择、64 steps、seed 和超参数全部保持不变。由于 prompt/target contract 已变化，旧 base 和旧 adapter 结果只保留为诊断，F1 必须用新 commit 新建 base 与训练 run。F1 若仍未同时通过 valid/targeted、mean IoU 和 IoU@0.3 门，M3 停止，不允许第二次格式修复或增加训练步数。
+
 ### M3-S2：先证实 crop 有用，再谈 Agent 效果
 
 定位门通过后，先在 validation 上做 compute-matched `full-image`、`oracle-crop`、`black-crop` 答案对照。只有 oracle crop 相对 full-image 有正向 paired delta，且优于 black crop，才把 learned locator 接入 Agent。否则 locator 即使 IoU 高也不构成 benchmark 突破，路线停止。
