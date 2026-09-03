@@ -173,6 +173,46 @@ def test_forced_region_policy_requires_backend_to_localize(tmp_path: Path) -> No
         )
 
 
+def test_dedicated_localizer_runs_between_overview_and_final(tmp_path: Path) -> None:
+    class DedicatedLocalizerBackend:
+        def decide(self, messages, tools):
+            raise AssertionError("generic decision must not run")
+
+        def localize(self, messages, tools):
+            assert any(message["role"] == "tool" for message in messages)
+            return {
+                "content": "inspect right half",
+                "tool_call": {
+                    "name": "region_inspect",
+                    "arguments": {
+                        "media_id": "m1",
+                        "region_xyxy_1000": [500, 0, 1000, 1000],
+                        "target": "right-half fixture",
+                    },
+                },
+            }
+
+        def finalize(self, messages, output_schema):
+            return {"sample_id": "s1", "answer": "A"}
+
+    result = run_medical_agent(
+        _sample(tmp_path),
+        DedicatedLocalizerBackend(),
+        tmp_path,
+        tmp_path / "artifacts",
+        allowed_tools=("inspect_overview", "region_inspect"),
+        max_steps=2,
+        initial_visual_policy="overview_then_localize",
+    )
+    assert [trace["tool_name"] for trace in result.tool_traces] == [
+        "inspect_overview",
+        "region_inspect",
+    ]
+    assert result.trajectory["decision_calls"] == 0
+    assert result.trajectory["localizer_calls"] == 1
+    assert result.trajectory["finish_reason"] == "forced_localization_completed"
+
+
 def test_inference_row_rejects_reference_fields(tmp_path: Path) -> None:
     sample = _sample(tmp_path)
     sample["answer"] = "A"

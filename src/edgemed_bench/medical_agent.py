@@ -96,12 +96,22 @@ def run_medical_agent(
     reject_reference_fields([sample])
     if max_steps < 1:
         raise ValueError("max_steps must be positive")
-    if initial_visual_policy not in {"none", "overview", "overview_then_region"}:
+    if initial_visual_policy not in {
+        "none",
+        "overview",
+        "overview_then_region",
+        "overview_then_localize",
+    }:
         raise ValueError(f"Unknown initial_visual_policy: {initial_visual_policy}")
-    if initial_visual_policy in {"overview", "overview_then_region"} and "inspect_overview" not in allowed_tools:
+    if initial_visual_policy in {
+        "overview", "overview_then_region", "overview_then_localize"
+    } and "inspect_overview" not in allowed_tools:
         raise ValueError("initial overview policy requires inspect_overview in allowed_tools")
-    if initial_visual_policy == "overview_then_region" and "region_inspect" not in allowed_tools:
-        raise ValueError("overview_then_region policy requires region_inspect in allowed_tools")
+    if (
+        initial_visual_policy in {"overview_then_region", "overview_then_localize"}
+        and "region_inspect" not in allowed_tools
+    ):
+        raise ValueError("targeted region policy requires region_inspect in allowed_tools")
     executor = MedicalToolExecutor(
         sample=sample,
         data_root=data_root,
@@ -123,7 +133,11 @@ def run_medical_agent(
             },
         },
     ]
-    if initial_visual_policy in {"overview", "overview_then_region"}:
+    if initial_visual_policy in {
+        "overview",
+        "overview_then_region",
+        "overview_then_localize",
+    }:
         initial_call = {"name": "inspect_overview", "arguments": {"sample_count": 1}}
         messages.append(
             {
@@ -159,7 +173,42 @@ def run_medical_agent(
             }
         )
     finish_reason = "max_steps"
-    for _ in range(max_steps):
+    if initial_visual_policy == "overview_then_localize":
+        localize = getattr(backend, "localize", None)
+        if not callable(localize):
+            raise TypeError("overview_then_localize requires backend.localize")
+        turn = localize(messages, {name: TOOL_SCHEMAS[name] for name in allowed_tools})
+        if not isinstance(turn, dict):
+            raise TypeError("Agent backend localization must be an object")
+        tool_call = turn.get("tool_call")
+        if not isinstance(tool_call, dict) or tool_call.get("name") != "region_inspect":
+            raise RuntimeError("Dedicated localizer did not select region_inspect")
+        if not isinstance(tool_call.get("arguments"), dict):
+            raise ValueError("Dedicated localizer returned invalid tool arguments")
+        localization_message = {
+            "role": "assistant",
+            "content": turn.get("content", ""),
+            "phase": "localize",
+            "tool_call": tool_call,
+            "policy_intervention": "dedicated_region_localizer",
+        }
+        if isinstance(turn.get("_model_call"), dict):
+            localization_message["model_call"] = turn["_model_call"]
+        messages.append(localization_message)
+        result, trace = executor.execute("region_inspect", tool_call["arguments"])
+        messages.append(
+            {
+                "role": "tool",
+                "tool_call_id": trace["trace_id"],
+                "name": trace["tool_name"],
+                "content": result,
+            }
+        )
+        if trace["status"] != "completed":
+            raise RuntimeError("Dedicated localizer produced a failed region tool call")
+        finish_reason = "forced_localization_completed"
+
+    for _ in range(0 if initial_visual_policy == "overview_then_localize" else max_steps):
         turn = backend.decide(messages, {name: TOOL_SCHEMAS[name] for name in allowed_tools})
         if not isinstance(turn, dict):
             raise TypeError("Agent backend decision must be an object")
@@ -244,6 +293,9 @@ def run_medical_agent(
         "finish_reason": finish_reason,
         "decision_calls": sum(
             message.get("phase") == "decision" for message in messages
+        ),
+        "localizer_calls": sum(
+            message.get("phase") == "localize" for message in messages
         ),
         "policy_interventions": sum(
             isinstance(message.get("policy_intervention"), str) for message in messages

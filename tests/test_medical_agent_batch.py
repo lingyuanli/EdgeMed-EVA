@@ -7,7 +7,11 @@ from PIL import Image
 
 from edgemed_bench.finalize_agent_eval import finalize_agent_evaluation
 from edgemed_bench.io import read_jsonl
-from edgemed_bench.qwen_agent_backend import build_decision_instruction, parse_json_object
+from edgemed_bench.qwen_agent_backend import (
+    LOCALIZATION_CONTRACT,
+    build_decision_instruction,
+    parse_json_object,
+)
 from edgemed_bench.run_medical_agent import normalize_agent_sample, run_agent_batch
 
 
@@ -191,3 +195,9 @@ def test_forced_region_requirement_is_promoted_to_decision_instruction() -> None
     )
     assert instruction.endswith("CONTROLLER_REQUIREMENT=" + requirement)
     assert "A CONTROLLER_REQUIREMENT overrides the optional stop" in instruction
+
+
+def test_localization_contract_has_no_stop_or_answer_exit() -> None:
+    assert '"name":"region_inspect"' in LOCALIZATION_CONTRACT
+    assert "Do not return null" in LOCALIZATION_CONTRACT
+    assert '"answer"' not in LOCALIZATION_CONTRACT

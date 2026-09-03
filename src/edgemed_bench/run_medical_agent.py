@@ -338,7 +338,12 @@ def main() -> None:
     parser.add_argument("--max-steps", type=int, default=3)
     parser.add_argument(
         "--initial-visual-policy",
-        choices=("none", "overview", "overview_then_region"),
+        choices=(
+            "none",
+            "overview",
+            "overview_then_region",
+            "overview_then_localize",
+        ),
         default="none",
     )
     parser.add_argument("--decision-max-new-tokens", type=int, default=192)

@@ -36,6 +36,12 @@ no Markdown. Copy every key and value type from OUTPUT_SCHEMA. In particular:
 - observations describe visible pixels, not tool metadata or an unsupported diagnosis.
 Use null for region_xyxy_1000 only when the cited acquisition is a non-region overview."""
 
+LOCALIZATION_CONTRACT = """Localize one question-relevant region after inspecting the completed
+overview. Return exactly one JSON object and no Markdown, with this shape:
+{"content":"visible target to inspect","tool_call":{"name":"region_inspect","arguments":{"media_id":"exact media id","region_xyxy_1000":[x1,y1,x2,y2],"target":"concrete visual distinction"}}}
+The normalized box must satisfy 0<=x1<x2<=1000 and 0<=y1<y2<=1000, with area in [0.01,0.64].
+Do not return null, a full-frame box, an answer, or a diagnosis."""
+
 
 def parse_json_object(text: str) -> dict[str, Any]:
     """Extract exactly one JSON object without guessing or schema repair."""
@@ -153,7 +159,11 @@ class Qwen35MedicalAgentBackend:
             "backend": "qwen35-medical-agent/v1",
             "prompt_contract_sha256": hashlib.sha256(
                 json.dumps(
-                    {"decision": DECISION_CONTRACT, "final": FINAL_CONTRACT},
+                    {
+                        "decision": DECISION_CONTRACT,
+                        "localization": LOCALIZATION_CONTRACT,
+                        "final": FINAL_CONTRACT,
+                    },
                     sort_keys=True,
                     separators=(",", ":"),
                 ).encode()
@@ -279,6 +289,25 @@ class Qwen35MedicalAgentBackend:
         )
         if "tool_call" not in parsed:
             raise ValueError("Decision output is missing tool_call")
+        parsed["_model_call"] = call
+        return parsed
+
+    def localize(
+        self, messages: list[dict[str, Any]], tools: dict[str, Any]
+    ) -> dict[str, Any]:
+        if "region_inspect" not in tools:
+            raise ValueError("Dedicated localizer requires region_inspect")
+        instruction = LOCALIZATION_CONTRACT + "\nREGION_TOOL=" + json.dumps(
+            tools["region_inspect"], ensure_ascii=False, sort_keys=True
+        )
+        parsed, call = self._generate(
+            messages, instruction, self.decision_max_new_tokens, "localize"
+        )
+        tool_call = parsed.get("tool_call")
+        if not isinstance(tool_call, dict) or tool_call.get("name") != "region_inspect":
+            raise ValueError("Dedicated localizer did not return region_inspect")
+        if not isinstance(tool_call.get("arguments"), dict):
+            raise ValueError("Dedicated localizer returned invalid arguments")
         parsed["_model_call"] = call
         return parsed
 
