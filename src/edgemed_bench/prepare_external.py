@@ -712,6 +712,153 @@ def build_slake_localization_surface(
     return report
 
 
+def build_slake_oracle_crop_answer_surface(
+    locator_inference_path: Path,
+    locator_targets_path: Path,
+    source_json_path: Path,
+    image_root: Path,
+    output_root: Path,
+    full_output: Path,
+    crop_output: Path,
+    black_output: Path,
+    references_output: Path,
+    report_path: Path,
+) -> dict[str, Any]:
+    """Materialize full/oracle/black answer arms from a frozen locator selection."""
+    inference_rows = read_jsonl(locator_inference_path)
+    reject_reference_fields(inference_rows)
+    target_rows = read_jsonl(locator_targets_path)
+    targets = {str(row["sample_id"]): row for row in target_rows}
+    if len(targets) != len(target_rows):
+        raise ValueError("Duplicate locator target sample ids")
+    if {str(row["sample_id"]) for row in inference_rows} != set(targets):
+        raise ValueError("Locator inference and target sample ids differ")
+    raw_source = json.loads(source_json_path.read_text(encoding="utf-8"))
+    if not isinstance(raw_source, list):
+        raise TypeError("SLAKE answer source must be a JSON array")
+    source_by_id = {str(row.get("qid")): row for row in raw_source if isinstance(row, dict)}
+    if len(source_by_id) != len(raw_source):
+        raise ValueError("SLAKE source contains missing or duplicate qid")
+
+    output_root.mkdir(parents=True, exist_ok=True)
+    (output_root / "crops").mkdir(exist_ok=True)
+    (output_root / "black").mkdir(exist_ok=True)
+    full_rows = []
+    crop_rows = []
+    black_rows = []
+    references = []
+    artifact_hashes = {}
+    for row in inference_rows:
+        sample_id = str(row["sample_id"])
+        source_id = str(row.get("source_record_id"))
+        source = source_by_id.get(source_id)
+        if source is None:
+            raise ValueError(f"Missing SLAKE source record: {source_id}")
+        if source.get("question") != row.get("question") or source.get("img_name") != row.get(
+            "image_path"
+        ):
+            raise ValueError(f"Frozen locator/source mismatch: {sample_id}")
+        answer = str(source.get("answer") or "").strip()
+        if not answer:
+            raise ValueError(f"Missing SLAKE answer: {sample_id}")
+        target = targets[sample_id]
+        box = target.get("region_xyxy_1000")
+        if (
+            not isinstance(box, list)
+            or len(box) != 4
+            or any(not isinstance(value, int) for value in box)
+        ):
+            raise ValueError(f"Invalid oracle box: {sample_id}")
+        source_image_path = image_root / str(row["image_path"])
+        if not source_image_path.is_file() or sha256_file(source_image_path) != row.get(
+            "image_sha256"
+        ):
+            raise ValueError(f"Missing or changed oracle source image: {sample_id}")
+        with Image.open(source_image_path) as source_image:
+            image = source_image.convert("RGB")
+        x1 = max(0, min(image.width - 1, math.floor(box[0] * image.width / 1000)))
+        y1 = max(0, min(image.height - 1, math.floor(box[1] * image.height / 1000)))
+        x2 = max(x1 + 1, min(image.width, math.ceil(box[2] * image.width / 1000)))
+        y2 = max(y1 + 1, min(image.height, math.ceil(box[3] * image.height / 1000)))
+        crop = image.crop((x1, y1, x2, y2))
+        artifact_id = hashlib.sha256(sample_id.encode()).hexdigest()
+        crop_path = output_root / "crops" / f"{artifact_id}.png"
+        black_path = output_root / "black" / f"{artifact_id}.png"
+        crop.save(crop_path, format="PNG", optimize=False)
+        Image.new("RGB", crop.size, "black").save(black_path, format="PNG", optimize=False)
+        crop_sha = sha256_file(crop_path)
+        black_sha = sha256_file(black_path)
+        artifact_hashes[f"crops/{artifact_id}.png"] = crop_sha
+        artifact_hashes[f"black/{artifact_id}.png"] = black_sha
+        common = {
+            "sample_id": sample_id,
+            "kind": "open",
+            "question": row["question"],
+            "task": "slake-oracle-crop-answer",
+            "source_dataset": row.get("source_dataset"),
+            "source_version": row.get("source_version"),
+            "source_record_id": source_id,
+        }
+        full_rows.append(
+            {
+                **common,
+                "image_path": row["image_path"],
+                "image_sha256": row["image_sha256"],
+                "visual_arm": "full-image",
+            }
+        )
+        crop_rows.append(
+            {
+                **common,
+                "image_path": f"crops/{artifact_id}.png",
+                "image_sha256": crop_sha,
+                "visual_arm": "oracle-crop",
+            }
+        )
+        black_rows.append(
+            {
+                **common,
+                "image_path": f"black/{artifact_id}.png",
+                "image_sha256": black_sha,
+                "visual_arm": "black-crop",
+            }
+        )
+        references.append({"sample_id": sample_id, "answer": answer})
+    for rows in (full_rows, crop_rows, black_rows):
+        reject_reference_fields(rows)
+    _write_jsonl(full_output, full_rows)
+    _write_jsonl(crop_output, crop_rows)
+    _write_jsonl(black_output, black_rows)
+    _write_jsonl(references_output, references, mode=0o600)
+    report = {
+        "schema_version": "edgemed-slake-oracle-crop-answer-surface/v1",
+        "written_per_arm": len(inference_rows),
+        "selection": {
+            "frozen_locator_inference_order": True,
+            "vqa_answer_used_for_selection": False,
+            "oracle_box_used_only_for_crop_materialization": True,
+        },
+        "arms": ["full-image", "oracle-crop", "black-crop"],
+        "source_hashes": {
+            "locator_inference_sha256": sha256_file(locator_inference_path),
+            "locator_targets_sha256": sha256_file(locator_targets_path),
+            "source_json_sha256": sha256_file(source_json_path),
+            "full_inference_sha256": sha256_file(full_output),
+            "crop_inference_sha256": sha256_file(crop_output),
+            "black_inference_sha256": sha256_file(black_output),
+            "references_sha256": sha256_file(references_output),
+        },
+        "artifact_hashes": dict(sorted(artifact_hashes.items())),
+        "leakage_boundary": {
+            "inference_has_answer_fields": False,
+            "references_mode": "0600",
+            "references_materialized_after_frozen_selection": True,
+        },
+    }
+    write_json(report_path, report)
+    return report
+
+
 def quarantine_gate_candidates(
     manifest_path: Path,
     gate_report_path: Path,
@@ -810,6 +957,17 @@ def main() -> None:
     slake_localization.add_argument("--seed", default="edgemed-slake-localization-v1")
     slake_localization.add_argument("--area-min", type=float, default=0.01)
     slake_localization.add_argument("--area-max", type=float, default=0.64)
+    oracle_crop = subparsers.add_parser("slake-oracle-crop-answer-surface")
+    oracle_crop.add_argument("--locator-inference", type=Path, required=True)
+    oracle_crop.add_argument("--locator-targets", type=Path, required=True)
+    oracle_crop.add_argument("--source-json", type=Path, required=True)
+    oracle_crop.add_argument("--image-root", type=Path, required=True)
+    oracle_crop.add_argument("--output-root", type=Path, required=True)
+    oracle_crop.add_argument("--full-output", type=Path, required=True)
+    oracle_crop.add_argument("--crop-output", type=Path, required=True)
+    oracle_crop.add_argument("--black-output", type=Path, required=True)
+    oracle_crop.add_argument("--references-output", type=Path, required=True)
+    oracle_crop.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
 
     if args.source == "pmc-vqa":
@@ -864,6 +1022,19 @@ def main() -> None:
             seed=args.seed,
             area_min=args.area_min,
             area_max=args.area_max,
+        )
+    elif args.source == "slake-oracle-crop-answer-surface":
+        report = build_slake_oracle_crop_answer_surface(
+            args.locator_inference,
+            args.locator_targets,
+            args.source_json,
+            args.image_root,
+            args.output_root,
+            args.full_output,
+            args.crop_output,
+            args.black_output,
+            args.references_output,
+            args.report,
         )
     else:
         report = quarantine_gate_candidates(

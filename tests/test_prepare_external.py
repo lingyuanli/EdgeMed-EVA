@@ -9,6 +9,7 @@ from PIL import Image
 from edgemed_bench.io import read_jsonl
 from edgemed_bench.prepare_external import (
     build_slake_localization_surface,
+    build_slake_oracle_crop_answer_surface,
     build_pmc_vqa,
     build_slake,
     build_slake_binary_surface,
@@ -299,3 +300,77 @@ def test_slake_localization_surface_uses_detection_without_vqa_answer(
     assert report["selection"]["vqa_answer_read"] is False
     assert report["selection"]["max_per_label"] == 1
     assert report["rejected"]["matched_label_count_not_one"] == 1
+
+
+def test_slake_oracle_crop_surface_preserves_answer_isolation(tmp_path: Path) -> None:
+    image_root = tmp_path / "imgs"
+    image_path = image_root / "xmlab1" / "source.png"
+    image_path.parent.mkdir(parents=True)
+    image = Image.new("RGB", (100, 100), "white")
+    for x in range(20, 60):
+        for y in range(30, 70):
+            image.putpixel((x, y), (255, 0, 0))
+    image.save(image_path)
+    image_sha = hashlib.sha256(image_path.read_bytes()).hexdigest()
+    locator_inference = tmp_path / "locator.jsonl"
+    locator_inference.write_text(
+        json.dumps(
+            {
+                "sample_id": "s1",
+                "kind": "localization",
+                "question": "What color is the liver?",
+                "image_path": "xmlab1/source.png",
+                "image_sha256": image_sha,
+                "source_record_id": "7",
+                "source_dataset": "BoKelvin/SLAKE",
+                "source_version": "revision",
+            }
+        )
+        + "\n"
+    )
+    targets = tmp_path / "targets.jsonl"
+    targets.write_text(
+        json.dumps({"sample_id": "s1", "region_xyxy_1000": [200, 300, 600, 700]})
+        + "\n"
+    )
+    source = tmp_path / "validation.json"
+    source.write_text(
+        json.dumps(
+            [
+                {
+                    "qid": 7,
+                    "img_name": "xmlab1/source.png",
+                    "question": "What color is the liver?",
+                    "answer": "red",
+                }
+            ]
+        )
+    )
+    output_root = tmp_path / "oracle"
+    full = tmp_path / "full.jsonl"
+    crop = tmp_path / "crop.jsonl"
+    black = tmp_path / "black.jsonl"
+    references = tmp_path / "references.jsonl"
+    report = build_slake_oracle_crop_answer_surface(
+        locator_inference,
+        targets,
+        source,
+        image_root,
+        output_root,
+        full,
+        crop,
+        black,
+        references,
+        tmp_path / "report.json",
+    )
+    crop_row = read_jsonl(crop)[0]
+    black_row = read_jsonl(black)[0]
+    assert "answer" not in crop_row
+    assert crop_row["visual_arm"] == "oracle-crop"
+    assert black_row["visual_arm"] == "black-crop"
+    with Image.open(output_root / crop_row["image_path"]) as crop_image:
+        assert crop_image.size == (40, 40)
+        assert crop_image.getpixel((10, 10)) == (255, 0, 0)
+    assert read_jsonl(references) == [{"sample_id": "s1", "answer": "red"}]
+    assert oct(references.stat().st_mode & 0o777) == "0o600"
+    assert report["selection"]["vqa_answer_used_for_selection"] is False
