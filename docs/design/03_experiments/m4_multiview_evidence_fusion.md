@@ -45,3 +45,16 @@
 `full + oracle crop` 相对 full-image 的 token F1 为 `+7.59` 点，95% CI `[0.23, 16.74]`；相对 compute-matched `full + black crop` 为 `+8.37` 点，95% CI `[0.47, 18.60]`。两个预注册 efficacy 条件均通过，且黑图双视图与单全图近似持平，排除了“仅增加第二张图/token”足以解释增益。
 
 结论边界：这只是 SLAKE 43 条 answer-isolated development slice 上的 oracle 上界，不是 learned locator 的答案增益，也不是 Med-CMR 分数。允许下一步只替换第二图来源为冻结 locator-64 预测框；其余模型、prompt、解码、scorer 与样本保持不变。
+
+## 6. M4-S2 learned-crop deployability gate
+
+下一臂 D 使用 locator-64 已冻结的 prediction SHA-256 `80ca593a350b7a1ad353852bcdf0be1e25b35e144f296bd24e4d5c6ad61926a0` 逐样本裁剪。构建器只能读取 answer-free full manifest、completed locator run manifest 与 predictions；不得读取 locator targets 或答案。回答阶段仍加载 base 模型，不加载 locator adapter。
+
+只有同时满足以下条件，才认为定位器在当前开发 slice 上产生可部署答案增益：
+
+1. D 完成 43/43，且所有输入/输出/locator 绑定有 SHA-256；
+2. `token_F1(D) - token_F1(full) > 0`；
+3. `token_F1(D) - token_F1(full + black) > 0`；
+4. D 至少实现 oracle 增量的 25%，即 `(D - full) / (oracle - full) >= 0.25`。
+
+必须报告 paired bootstrap 区间；若区间跨零，则只能视为 pilot signal，进入更大、预先冻结的外部开发集复现后才能接触 Med-CMR milestone。若点估计门也失败，不允许按逐题结果调框；下一变量只能来自 aggregate error taxonomy。

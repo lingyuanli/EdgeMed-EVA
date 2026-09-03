@@ -966,6 +966,125 @@ def build_slake_multiview_answer_surface(
     return report
 
 
+def build_slake_learned_crop_multiview_surface(
+    full_path: Path,
+    locator_predictions_path: Path,
+    locator_run_manifest_path: Path,
+    surface_root: Path,
+    output_path: Path,
+    report_path: Path,
+) -> dict[str, Any]:
+    """Materialize learned crops from a completed, hash-bound locator run."""
+    full_rows = read_jsonl(full_path)
+    reject_reference_fields(full_rows)
+    predictions = read_jsonl(locator_predictions_path)
+    reject_reference_fields(predictions)
+    run_manifest = json.loads(locator_run_manifest_path.read_text(encoding="utf-8"))
+    if run_manifest.get("status") != "completed":
+        raise ValueError("Locator run is not completed")
+    predictions_sha = sha256_file(locator_predictions_path)
+    if run_manifest.get("predictions_sha256") != predictions_sha:
+        raise ValueError("Locator predictions do not match the completed run manifest")
+    prediction_by_id = {str(row["sample_id"]): row for row in predictions}
+    expected_ids = [str(row["sample_id"]) for row in full_rows]
+    if (
+        len(set(expected_ids)) != len(expected_ids)
+        or len(prediction_by_id) != len(predictions)
+        or set(expected_ids) != set(prediction_by_id)
+    ):
+        raise ValueError("Full manifest and locator predictions require identical unique sample ids")
+
+    learned_root = surface_root / "learned-crops"
+    learned_root.mkdir(parents=True, exist_ok=True)
+    output_rows = []
+    artifact_hashes = {}
+    for full in full_rows:
+        sample_id = str(full["sample_id"])
+        prediction = prediction_by_id[sample_id]
+        if prediction.get("status") != "completed":
+            raise ValueError(f"Incomplete locator prediction: {sample_id}")
+        tool_call = prediction.get("tool_call")
+        arguments = tool_call.get("arguments") if isinstance(tool_call, dict) else None
+        box = arguments.get("region_xyxy_1000") if isinstance(arguments, dict) else None
+        if (
+            not isinstance(tool_call, dict)
+            or tool_call.get("name") != "region_inspect"
+            or not isinstance(box, list)
+            or len(box) != 4
+            or any(not isinstance(value, int) or value < 0 or value > 1000 for value in box)
+            or box[0] >= box[2]
+            or box[1] >= box[3]
+        ):
+            raise ValueError(f"Invalid learned locator box: {sample_id}")
+        source_image_path = surface_root / str(full["image_path"])
+        if not source_image_path.is_file() or sha256_file(source_image_path) != full.get(
+            "image_sha256"
+        ):
+            raise ValueError(f"Missing or changed full image: {sample_id}")
+        with Image.open(source_image_path) as source:
+            image = source.convert("RGB")
+        x1 = max(0, min(image.width - 1, math.floor(box[0] * image.width / 1000)))
+        y1 = max(0, min(image.height - 1, math.floor(box[1] * image.height / 1000)))
+        x2 = max(x1 + 1, min(image.width, math.ceil(box[2] * image.width / 1000)))
+        y2 = max(y1 + 1, min(image.height, math.ceil(box[3] * image.height / 1000)))
+        crop = image.crop((x1, y1, x2, y2))
+        artifact_id = hashlib.sha256(sample_id.encode()).hexdigest()
+        learned_path = learned_root / f"{artifact_id}.png"
+        crop.save(learned_path, format="PNG", optimize=False)
+        learned_sha = sha256_file(learned_path)
+        relative_learned_path = f"learned-crops/{artifact_id}.png"
+        artifact_hashes[relative_learned_path] = learned_sha
+        common = {
+            key: value
+            for key, value in full.items()
+            if key not in {"image_path", "image_sha256", "visual_arm"}
+        }
+        output_rows.append(
+            {
+                **common,
+                "images": [
+                    {
+                        "role": "full_context",
+                        "image_path": full["image_path"],
+                        "image_sha256": full["image_sha256"],
+                    },
+                    {
+                        "role": "local_detail",
+                        "image_path": relative_learned_path,
+                        "image_sha256": learned_sha,
+                    },
+                ],
+                "visual_arm": "full-plus-learned-crop",
+            }
+        )
+    reject_reference_fields(output_rows)
+    _write_jsonl(output_path, output_rows)
+    report = {
+        "schema_version": "edgemed-slake-learned-crop-multiview-surface/v1",
+        "written": len(output_rows),
+        "input_layout": "labeled-multi-image-v1",
+        "source_hashes": {
+            "full_inference_sha256": sha256_file(full_path),
+            "locator_predictions_sha256": predictions_sha,
+            "locator_run_manifest_sha256": sha256_file(locator_run_manifest_path),
+            "output_sha256": sha256_file(output_path),
+        },
+        "locator_binding": {
+            "run_id": run_manifest.get("run_id"),
+            "contract_sha256": run_manifest.get("contract_sha256"),
+            "code_commit": run_manifest.get("code_commit"),
+        },
+        "artifact_hashes": dict(sorted(artifact_hashes.items())),
+        "leakage_boundary": {
+            "references_read": False,
+            "ground_truth_boxes_read": False,
+            "inference_has_answer_fields": False,
+        },
+    }
+    write_json(report_path, report)
+    return report
+
+
 def quarantine_gate_candidates(
     manifest_path: Path,
     gate_report_path: Path,
@@ -1082,6 +1201,13 @@ def main() -> None:
     multiview.add_argument("--oracle-multiview-output", type=Path, required=True)
     multiview.add_argument("--black-multiview-output", type=Path, required=True)
     multiview.add_argument("--report", type=Path, required=True)
+    learned_multiview = subparsers.add_parser("slake-learned-crop-multiview-surface")
+    learned_multiview.add_argument("--full", type=Path, required=True)
+    learned_multiview.add_argument("--locator-predictions", type=Path, required=True)
+    learned_multiview.add_argument("--locator-run-manifest", type=Path, required=True)
+    learned_multiview.add_argument("--surface-root", type=Path, required=True)
+    learned_multiview.add_argument("--output", type=Path, required=True)
+    learned_multiview.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
 
     if args.source == "pmc-vqa":
@@ -1157,6 +1283,15 @@ def main() -> None:
             args.black,
             args.oracle_multiview_output,
             args.black_multiview_output,
+            args.report,
+        )
+    elif args.source == "slake-learned-crop-multiview-surface":
+        report = build_slake_learned_crop_multiview_surface(
+            args.full,
+            args.locator_predictions,
+            args.locator_run_manifest,
+            args.surface_root,
+            args.output,
             args.report,
         )
     else:

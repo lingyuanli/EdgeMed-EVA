@@ -8,6 +8,7 @@ from PIL import Image
 
 from edgemed_bench.io import read_jsonl
 from edgemed_bench.prepare_external import (
+    build_slake_learned_crop_multiview_surface,
     build_slake_localization_surface,
     build_slake_multiview_answer_surface,
     build_slake_oracle_crop_answer_surface,
@@ -423,3 +424,75 @@ def test_slake_multiview_surface_combines_only_answer_free_arms(tmp_path: Path) 
     assert oracle["images"][1]["image_sha256"] == "crop-sha"
     assert black["images"][1]["image_sha256"] == "black-sha"
     assert report["leakage_boundary"]["references_read"] is False
+
+
+def test_learned_crop_surface_binds_completed_locator_without_targets(tmp_path: Path) -> None:
+    surface_root = tmp_path / "surface"
+    full_image = surface_root / "full" / "source.png"
+    full_image.parent.mkdir(parents=True)
+    image = Image.new("RGB", (100, 100), "white")
+    for x in range(20, 60):
+        for y in range(30, 70):
+            image.putpixel((x, y), (255, 0, 0))
+    image.save(full_image)
+    image_sha = hashlib.sha256(full_image.read_bytes()).hexdigest()
+    full = tmp_path / "full.jsonl"
+    full.write_text(
+        json.dumps(
+            {
+                "sample_id": "s1",
+                "kind": "open",
+                "question": "What color?",
+                "task": "fixture",
+                "source_record_id": "7",
+                "image_path": "full/source.png",
+                "image_sha256": image_sha,
+                "visual_arm": "full-image",
+            }
+        )
+        + "\n"
+    )
+    predictions = tmp_path / "predictions.jsonl"
+    predictions.write_text(
+        json.dumps(
+            {
+                "sample_id": "s1",
+                "status": "completed",
+                "tool_call": {
+                    "name": "region_inspect",
+                    "arguments": {"region_xyxy_1000": [200, 300, 600, 700]},
+                },
+            }
+        )
+        + "\n"
+    )
+    prediction_sha = hashlib.sha256(predictions.read_bytes()).hexdigest()
+    run_manifest = tmp_path / "run_manifest.json"
+    run_manifest.write_text(
+        json.dumps(
+            {
+                "status": "completed",
+                "run_id": "locator-1",
+                "contract_sha256": "contract",
+                "code_commit": "commit",
+                "predictions_sha256": prediction_sha,
+            }
+        )
+    )
+    output = tmp_path / "learned.jsonl"
+    report = build_slake_learned_crop_multiview_surface(
+        full,
+        predictions,
+        run_manifest,
+        surface_root,
+        output,
+        tmp_path / "learned-report.json",
+    )
+    row = read_jsonl(output)[0]
+    assert row["visual_arm"] == "full-plus-learned-crop"
+    assert row["images"][0]["image_sha256"] == image_sha
+    with Image.open(surface_root / row["images"][1]["image_path"]) as crop:
+        assert crop.size == (40, 40)
+        assert crop.getpixel((10, 10)) == (255, 0, 0)
+    assert report["locator_binding"]["run_id"] == "locator-1"
+    assert report["leakage_boundary"]["ground_truth_boxes_read"] is False
