@@ -31,3 +31,17 @@
 4. 推理输入不包含 answer/reference/ground-truth 字段。
 
 门槛失败时，停止 crop-fusion 路线，转向不依赖空间裁剪的证据表示；不得根据逐题 validation 正误修改框或 prompt，也不得访问 Med-CMR test 调参。
+
+## 5. 结果
+
+三臂均完成 43/43。双图运行来自 commit `28ad772`，每臂峰值 CUDA `4,498.41 MiB`；oracle/black 双图推理分别耗时 `39.31/40.00 s`。
+
+| Arm | Normalized exact | Token F1 | Prediction SHA-256 |
+|---|---:|---:|---|
+| full-image | 53.49% | 68.95% | `9607c565234eae627668e9ba8591891d5688f6d1b3e904c6128d8a36778cc157` |
+| full + black crop | 51.16% | 68.17% | `eba75e430a0329fcc5267a89f2651f017c972d0d955f9671315b47f24422b6b0` |
+| full + oracle crop | 60.47% | 76.55% | `50046e16be7a2c846cdf906640159c853310a7cc1ac1ed8ed8e172a108a99589` |
+
+`full + oracle crop` 相对 full-image 的 token F1 为 `+7.59` 点，95% CI `[0.23, 16.74]`；相对 compute-matched `full + black crop` 为 `+8.37` 点，95% CI `[0.47, 18.60]`。两个预注册 efficacy 条件均通过，且黑图双视图与单全图近似持平，排除了“仅增加第二张图/token”足以解释增益。
+
+结论边界：这只是 SLAKE 43 条 answer-isolated development slice 上的 oracle 上界，不是 learned locator 的答案增益，也不是 Med-CMR 分数。允许下一步只替换第二图来源为冻结 locator-64 预测框；其余模型、prompt、解码、scorer 与样本保持不变。

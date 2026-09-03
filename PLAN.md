@@ -109,6 +109,7 @@
 | 2026-09-02 | M1 schema-v2 单样本通过，8 条放大运行连续暴露证据状态机与 cross-field 错误 | 单样本 E0 全 1；首个 smoke8 在 6/8 后因第 7 条首步无工具而停止；强制 overview 后 8/8 完成但 overview evidence 错填全图 region，E0 schema 仅 7/8 | 两次失败 run 均保留；增加显式 first-acquisition policy、commit-bound resume 和带原值日志的非 region 坐标 canonicalization；不修改答案或参考数据 |
 | 2026-09-02 | M1 单 V100 8 条 real-model operational closure 通过 | commit `6de6909` 下 8/8 inference、8/8 工具、E0 三项全 1，verifier 七项全 PASS；峰值 allocated/reserved 3,562.7/3,946 MiB；仅一条 policy intervention 与一条结构归一化 | 只确认运行、证据绑定和评测闭环；E1 3/8 不是 efficacy 结论，E2 无框、E3/医学正确性 DEFER。PMC-512 对该家族继续只作 analysis/smoke，不再用于答案策略调参 |
 | 2026-09-04 | M2 zero-shot crop 三路失败后，M3 监督 locator 通过独立 validation 定位门 | SLAKE detection 监督、train/validation 图像零重叠；64-step F1 QLoRA 将 mean IoU `0.1316→0.3299`、IoU@0.3 `16.28%→58.14%`，43/43 valid | 只建立定位能力；在 oracle-crop 优于 full/black 前，不接入 Agent 答案效果，不访问 Med-CMR |
+| 2026-09-04 | M3 crop-only 因果筛选失败，M4 global-local oracle 多视图通过 | crop-only 相对 full token F1 `-9.26`；full+oracle 相对 full `+7.59`（CI `[0.23,16.74]`），相对 full+black `+8.37`（CI `[0.47,18.60]`） | 冻结多视图协议；只将 oracle 框替换为 locator-64 预测框，执行 learned-crop deployability gate |
 
 ## 7. External Development Gate Contract
 

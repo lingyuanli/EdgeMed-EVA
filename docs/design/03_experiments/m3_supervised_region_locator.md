@@ -68,6 +68,8 @@ paired mean IoU `+0.1983`，IoU@0.3 `+41.86` points；34 条提高、2 条相同
 
 定位门通过后，先在 validation 上做 compute-matched `full-image`、`oracle-crop`、`black-crop` 答案对照。只有 oracle crop 相对 full-image 有正向 paired delta，且优于 black crop，才把 learned locator 接入 Agent。否则 locator 即使 IoU 高也不构成 benchmark 突破，路线停止。
 
+该门已执行并失败：三臂均为 43/43，full-image / oracle-crop / black-crop 的 token F1 分别为 `68.95% / 59.69% / 16.07%`。oracle-crop 相对 full-image 为 `-9.26` 点，95% CI `[-20.74, 2.25]`；相对 black-crop 为 `+43.62` 点，95% CI `[26.39, 59.69]`。因此局部图包含真实答案信息，但以局部图替换全图会损失更多全局上下文。M3 crop-only 路线按预注册规则停止；后续独立 M4 改测 full + crop 融合，不把该失败改写成通过。
+
 ### M3-S3：Agent 因果臂
 
 保持同一 finalizer 与两次模型调用，对比 learned crop、oracle crop、repeat overview、black crop；同时报告证据结构和答案指标。开发集通过后需多 seed 复现，才允许冻结一次新的 Med-CMR milestone；不得用 Med-CMR 逐题正误调 locator。

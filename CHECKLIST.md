@@ -68,7 +68,9 @@
 - [x] SLAKE train detection 构建答案隔离的 locator surface；与 validation 图像 SHA 零重叠
 - [x] 单 V100 locator QLoRA 2-step save/reload smoke 与 64-step pilot 完成
 - [x] locator-64 在 43 张未见图像上通过定位门：mean IoU 0.3299、IoU@0.3 58.14%
-- [ ] full/oracle-crop/black-crop 答案因果筛选通过
+- [x] full/oracle-crop/black-crop 答案因果筛选完成并保留失败：crop-only 相对 full `-9.26` token-F1 points
+- [x] full+oracle-crop 多视图门通过：相对 full `+7.59`、相对 full+black `+8.37`，两个 paired CI 下界均为正
+- [ ] 冻结 locator-64 的 learned crop 在同一多视图协议上通过 deployability gate
 
 ## Optimization Data Gate
 
