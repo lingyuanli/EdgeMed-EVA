@@ -741,6 +741,7 @@ def build_slake_oracle_crop_answer_surface(
         raise ValueError("SLAKE source contains missing or duplicate qid")
 
     output_root.mkdir(parents=True, exist_ok=True)
+    (output_root / "full").mkdir(exist_ok=True)
     (output_root / "crops").mkdir(exist_ok=True)
     (output_root / "black").mkdir(exist_ok=True)
     full_rows = []
@@ -782,12 +783,19 @@ def build_slake_oracle_crop_answer_surface(
         y2 = max(y1 + 1, min(image.height, math.ceil(box[3] * image.height / 1000)))
         crop = image.crop((x1, y1, x2, y2))
         artifact_id = hashlib.sha256(sample_id.encode()).hexdigest()
+        full_suffix = source_image_path.suffix.lower() or ".img"
+        full_path = output_root / "full" / f"{artifact_id}{full_suffix}"
         crop_path = output_root / "crops" / f"{artifact_id}.png"
         black_path = output_root / "black" / f"{artifact_id}.png"
+        shutil.copyfile(source_image_path, full_path)
         crop.save(crop_path, format="PNG", optimize=False)
         Image.new("RGB", crop.size, "black").save(black_path, format="PNG", optimize=False)
         crop_sha = sha256_file(crop_path)
         black_sha = sha256_file(black_path)
+        full_sha = sha256_file(full_path)
+        if full_sha != row["image_sha256"]:
+            raise ValueError(f"Materialized full image hash mismatch: {sample_id}")
+        artifact_hashes[f"full/{artifact_id}{full_suffix}"] = full_sha
         artifact_hashes[f"crops/{artifact_id}.png"] = crop_sha
         artifact_hashes[f"black/{artifact_id}.png"] = black_sha
         common = {
@@ -802,8 +810,8 @@ def build_slake_oracle_crop_answer_surface(
         full_rows.append(
             {
                 **common,
-                "image_path": row["image_path"],
-                "image_sha256": row["image_sha256"],
+                "image_path": f"full/{artifact_id}{full_suffix}",
+                "image_sha256": full_sha,
                 "visual_arm": "full-image",
             }
         )

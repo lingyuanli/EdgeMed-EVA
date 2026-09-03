@@ -366,9 +366,11 @@ def test_slake_oracle_crop_surface_preserves_answer_isolation(tmp_path: Path) ->
     )
     crop_row = read_jsonl(crop)[0]
     black_row = read_jsonl(black)[0]
+    full_row = read_jsonl(full)[0]
     assert "answer" not in crop_row
     assert crop_row["visual_arm"] == "oracle-crop"
     assert black_row["visual_arm"] == "black-crop"
+    assert (output_root / full_row["image_path"]).read_bytes() == image_path.read_bytes()
     with Image.open(output_root / crop_row["image_path"]) as crop_image:
         assert crop_image.size == (40, 40)
         assert crop_image.getpixel((10, 10)) == (255, 0, 0)
