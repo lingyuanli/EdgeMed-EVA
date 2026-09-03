@@ -9,6 +9,7 @@ from edgemed_bench.finalize_agent_eval import finalize_agent_evaluation
 from edgemed_bench.io import read_jsonl
 from edgemed_bench.qwen_agent_backend import (
     LOCALIZATION_CONTRACT,
+    Qwen35MedicalAgentBackend,
     build_decision_instruction,
     parse_json_object,
     validate_adapter_source,
@@ -199,9 +200,37 @@ def test_forced_region_requirement_is_promoted_to_decision_instruction() -> None
 
 
 def test_localization_contract_has_no_stop_or_answer_exit() -> None:
-    assert '"name":"region_inspect"' in LOCALIZATION_CONTRACT
+    assert '"arguments"' in LOCALIZATION_CONTRACT
+    assert "do not generate a tool name" in LOCALIZATION_CONTRACT
     assert "Do not return null" in LOCALIZATION_CONTRACT
     assert '"answer"' not in LOCALIZATION_CONTRACT
+
+
+def test_dedicated_localizer_wraps_fixed_tool_name() -> None:
+    backend = object.__new__(Qwen35MedicalAgentBackend)
+    backend.decision_max_new_tokens = 64
+    backend._generate = lambda *args: (
+        {
+            "content": "inspect liver",
+            "arguments": {
+                "media_id": "image-0",
+                "region_xyxy_1000": [100, 100, 500, 500],
+                "target": "Liver",
+            },
+        },
+        {"phase": "localize"},
+    )
+    result = backend.localize(
+        [], {"region_inspect": {"required": ["media_id"]}}
+    )
+    assert result["tool_call"] == {
+        "name": "region_inspect",
+        "arguments": {
+            "media_id": "image-0",
+            "region_xyxy_1000": [100, 100, 500, 500],
+            "target": "Liver",
+        },
+    }
 
 
 def test_adapter_source_is_hash_and_path_bound(tmp_path: Path) -> None:

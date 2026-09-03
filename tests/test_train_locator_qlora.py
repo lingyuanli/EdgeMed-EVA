@@ -31,7 +31,8 @@ def test_locator_target_is_compact_region_only_json() -> None:
     output = localization_target(_target())
     parsed = json.loads(output)
     assert parsed["content"] == "inspect Liver"
-    assert parsed["tool_call"]["arguments"]["region_xyxy_1000"] == [100, 200, 500, 600]
+    assert parsed["arguments"]["region_xyxy_1000"] == [100, 200, 500, 600]
+    assert "tool_call" not in parsed
     assert "answer" not in output
 
 

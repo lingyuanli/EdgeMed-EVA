@@ -77,7 +77,7 @@ def localization_target(target: dict[str, Any]) -> str:
         raise ValueError("Locator target area is outside the frozen interval")
     target_label = str(target.get("target_label") or arguments.get("target") or "region")
     return json.dumps(
-        {"content": f"inspect {target_label}", "tool_call": tool_call},
+        {"content": f"inspect {target_label}", "arguments": arguments},
         ensure_ascii=False,
         separators=(",", ":"),
     )
