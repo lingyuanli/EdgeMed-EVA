@@ -70,7 +70,8 @@
 - [x] locator-64 在 43 张未见图像上通过定位门：mean IoU 0.3299、IoU@0.3 58.14%
 - [x] full/oracle-crop/black-crop 答案因果筛选完成并保留失败：crop-only 相对 full `-9.26` token-F1 points
 - [x] full+oracle-crop 多视图门通过：相对 full `+7.59`、相对 full+black `+8.37`，两个 paired CI 下界均为正
-- [ ] 冻结 locator-64 的 learned crop 在同一多视图协议上通过 deployability gate
+- [x] locator-64 learned crop 在 validation 达到 `+1.98` token-F1 与 26.06% oracle 增量捕获；标记为 CI 未闭合的 pilot signal
+- [ ] 同一冻结 pipeline 在 45 条零重叠 SLAKE official test 上完成一次性 held-out 复现
 
 ## Optimization Data Gate
 

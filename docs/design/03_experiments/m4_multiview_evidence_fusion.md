@@ -58,3 +58,22 @@
 4. D 至少实现 oracle 增量的 25%，即 `(D - full) / (oracle - full) >= 0.25`。
 
 必须报告 paired bootstrap 区间；若区间跨零，则只能视为 pilot signal，进入更大、预先冻结的外部开发集复现后才能接触 Med-CMR milestone。若点估计门也失败，不允许按逐题结果调框；下一变量只能来自 aggregate error taxonomy。
+
+### M4-S2 结果
+
+D 完成 43/43，token F1 为 `70.93%`，exact 为 `53.49%`，prediction SHA-256 为 `cdf4f6d3763de708c5a6bbac02a6ce9d4bef0713caaf97ad0ea636e8870cd140`。相对 full 为 `+1.98` token-F1 points，95% CI `[0.00, 5.08]`；相对 full + black 为 `+2.76` points，95% CI `[-4.65, 11.63]`。其 oracle 增量捕获率为 `1.9788 / 7.5946 = 26.06%`。
+
+四个点估计门全部满足，但 black 对照 CI 跨零，因此判定为 `pilot_signal_only`，不是稳健的 deployability pass。允许执行一次协议完全冻结的 SLAKE official test held-out 复现，不允许修改 locator、prompt、crop、finalizer 或 scorer。
+
+## 7. M4-S3 official-test held-out 复现
+
+在任何 test 推理前冻结如下合同：
+
+- 来源：SLAKE official `test.json`，revision `a9083ce6c34ac3ffb17671a605962924d8a8f9e9`，SHA-256 `6be8f7b4c5a46cdbc713a5210a25b6ed5aa1fd1574c83cefb4f998131f17c2c3`。
+- 样本：沿用 validation 的 answer-blind locator 选择规则，共 45 条、45 张图；与 train/validation 图像 SHA 和 sample id 均零重叠。
+- locator inference SHA-256：`a32e4c08ebab9bf83b890e5db41b5d3fbd0f07fd58bc5f418309cf0d1ee77bef`；targets 独立保存为 0600，定位推理结束前不得读取。
+- 模型：冻结的 locator-64 adapter 与原 base finalizer；所有生成参数沿用 M4-S2。
+- 答案臂：full、full + black、full + learned crop、full + oracle crop。oracle 仅用于量化剩余上界，不参与 learned 路径。
+- 主要复现条件：learned - full 与 learned - black 的 token F1 点估计都大于 0，且方向与 validation 一致。
+- 强证据条件：上述两个 paired 95% CI 下界均大于 0。
+- 失败处理：无论结果如何，不按 test 单题或聚合结果继续调参；test 只运行一次并完整归档。

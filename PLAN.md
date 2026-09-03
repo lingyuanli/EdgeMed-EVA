@@ -110,6 +110,7 @@
 | 2026-09-02 | M1 单 V100 8 条 real-model operational closure 通过 | commit `6de6909` 下 8/8 inference、8/8 工具、E0 三项全 1，verifier 七项全 PASS；峰值 allocated/reserved 3,562.7/3,946 MiB；仅一条 policy intervention 与一条结构归一化 | 只确认运行、证据绑定和评测闭环；E1 3/8 不是 efficacy 结论，E2 无框、E3/医学正确性 DEFER。PMC-512 对该家族继续只作 analysis/smoke，不再用于答案策略调参 |
 | 2026-09-04 | M2 zero-shot crop 三路失败后，M3 监督 locator 通过独立 validation 定位门 | SLAKE detection 监督、train/validation 图像零重叠；64-step F1 QLoRA 将 mean IoU `0.1316→0.3299`、IoU@0.3 `16.28%→58.14%`，43/43 valid | 只建立定位能力；在 oracle-crop 优于 full/black 前，不接入 Agent 答案效果，不访问 Med-CMR |
 | 2026-09-04 | M3 crop-only 因果筛选失败，M4 global-local oracle 多视图通过 | crop-only 相对 full token F1 `-9.26`；full+oracle 相对 full `+7.59`（CI `[0.23,16.74]`），相对 full+black `+8.37`（CI `[0.47,18.60]`） | 冻结多视图协议；只将 oracle 框替换为 locator-64 预测框，执行 learned-crop deployability gate |
+| 2026-09-04 | M4 learned-crop validation 出现正向 pilot signal | token F1 `70.93%`；相对 full `+1.98`，相对 full+black `+2.76`；捕获 oracle 增量 26.06%，但 black 对照 CI 跨零 | 不进 Med-CMR；在零图像重叠的 45 条 SLAKE official test 上执行一次冻结 held-out 复现 |
 
 ## 7. External Development Gate Contract
 
