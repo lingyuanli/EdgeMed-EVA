@@ -23,6 +23,10 @@ PMC_ALLOWED_LICENSES = {"CC0", "CC BY", "CC BY-SA"}
 PMC_ID_RE = re.compile(r"^(PMC\d+)", re.IGNORECASE)
 CHOICE_PREFIX_RE = re.compile(r"^[A-D]\s*:\s*", re.IGNORECASE)
 QUESTION_TOKEN_RE = re.compile(r"[a-z0-9]+")
+YES_NO_QUESTION_RE = re.compile(
+    r"^(is|are|does|do|did|can|could|has|have|was|were|will|would|should)\b",
+    re.IGNORECASE,
+)
 
 
 def _group_hash(namespace: str, value: str) -> str:
@@ -377,6 +381,112 @@ def split_surfaces(
     return report
 
 
+def build_slake_binary_surface(
+    inference_path: Path,
+    references_path: Path,
+    inference_output: Path,
+    references_output: Path,
+    report_path: Path,
+    *,
+    limit: int = 96,
+    max_per_image: int = 1,
+    seed: str = "edgemed-slake-binary-v1",
+) -> dict[str, Any]:
+    """Derive a reference-blind yes/no MCQ cohort, then bind labels separately."""
+    if limit <= 0 or max_per_image <= 0:
+        raise ValueError("limit and max_per_image must be positive")
+    inference_rows = read_jsonl(inference_path)
+    reject_reference_fields(inference_rows)
+    candidates = []
+    rejected = Counter()
+    for row in inference_rows:
+        metadata = row.get("evaluation_metadata")
+        metadata = metadata if isinstance(metadata, dict) else {}
+        question = str(row.get("question", "")).strip()
+        if metadata.get("answer_type") != "CLOSED":
+            rejected["not_closed"] += 1
+            continue
+        if not YES_NO_QUESTION_RE.match(question) or " or " in question.casefold():
+            rejected["not_unambiguous_yes_no_form"] += 1
+            continue
+        candidates.append({**row, "_rank": _selection_key(seed, str(row["sample_id"]))})
+    candidates.sort(key=lambda row: (row["_rank"], str(row["sample_id"])))
+    selected = []
+    per_image = Counter()
+    for row in candidates:
+        image_key = str(row.get("image_sha256", row.get("image_path", "")))
+        if per_image[image_key] >= max_per_image:
+            rejected["per_image_cap"] += 1
+            continue
+        per_image[image_key] += 1
+        selected.append(row)
+        if len(selected) == limit:
+            break
+    if len(selected) != limit:
+        raise ValueError(f"Requested {limit} rows but selected {len(selected)}")
+
+    source_reference_rows = read_jsonl(references_path)
+    source_references = {str(row["sample_id"]): row for row in source_reference_rows}
+    if len(source_references) != len(source_reference_rows):
+        raise ValueError("Duplicate source reference sample ids")
+    derived_inference = []
+    derived_references = []
+    for row in selected:
+        sample_id = str(row["sample_id"])
+        if sample_id not in source_references:
+            raise ValueError(f"Missing SLAKE reference: {sample_id}")
+        answer = str(source_references[sample_id].get("answer", "")).strip().casefold()
+        if answer not in {"yes", "no"}:
+            raise ValueError(f"Frozen question-only selector admitted non-binary answer: {sample_id}")
+        metadata = row.get("evaluation_metadata")
+        metadata = dict(metadata) if isinstance(metadata, dict) else {}
+        output_row = {key: value for key, value in row.items() if key != "_rank"}
+        output_row.update(
+            {
+                "kind": "mcq",
+                "options": {"A": "Yes", "B": "No"},
+                "task": "slake-closed-binary",
+                "modality": metadata.get("modality", "unknown"),
+                "surface_derivation": "closed_interrogative_without_or/v1",
+            }
+        )
+        derived_inference.append(output_row)
+        derived_references.append(
+            {"sample_id": sample_id, "answer": "A" if answer == "yes" else "B"}
+        )
+    reject_reference_fields(derived_inference)
+    _write_jsonl(inference_output, derived_inference)
+    _write_jsonl(references_output, derived_references, mode=0o600)
+    report = {
+        "schema_version": "edgemed-slake-binary-surface/v1",
+        "selection": {
+            "answer_blind": True,
+            "seed": seed,
+            "limit": limit,
+            "max_per_image": max_per_image,
+            "rule": "CLOSED metadata; interrogative prefix; exclude questions containing ' or '",
+        },
+        "eligible_before_image_cap": len(candidates),
+        "written": len(derived_inference),
+        "unique_images": len(per_image),
+        "rejected": dict(sorted(rejected.items())),
+        "source_hashes": {
+            "source_inference_sha256": sha256_file(inference_path),
+            "source_references_sha256": sha256_file(references_path),
+            "inference_manifest_sha256": sha256_file(inference_output),
+            "references_sha256": sha256_file(references_output),
+        },
+        "leakage_boundary": {
+            "selection_fields": ["evaluation_metadata.answer_type", "question", "image_sha256"],
+            "references_used_after_selection_only": True,
+            "inference_has_reference_fields": False,
+            "references_mode": "0600",
+        },
+    }
+    write_json(report_path, report)
+    return report
+
+
 def quarantine_gate_candidates(
     manifest_path: Path,
     gate_report_path: Path,
@@ -451,6 +561,15 @@ def main() -> None:
     quarantine.add_argument("--gate-report", type=Path, required=True)
     quarantine.add_argument("--output", type=Path, required=True)
     quarantine.add_argument("--report", type=Path, required=True)
+    slake_binary = subparsers.add_parser("slake-binary-surface")
+    slake_binary.add_argument("--inference", type=Path, required=True)
+    slake_binary.add_argument("--references", type=Path, required=True)
+    slake_binary.add_argument("--inference-output", type=Path, required=True)
+    slake_binary.add_argument("--references-output", type=Path, required=True)
+    slake_binary.add_argument("--report", type=Path, required=True)
+    slake_binary.add_argument("--limit", type=int, default=96)
+    slake_binary.add_argument("--max-per-image", type=int, default=1)
+    slake_binary.add_argument("--seed", default="edgemed-slake-binary-v1")
     args = parser.parse_args()
 
     if args.source == "pmc-vqa":
@@ -479,6 +598,17 @@ def main() -> None:
             args.inference_output,
             args.references_output,
             args.report,
+        )
+    elif args.source == "slake-binary-surface":
+        report = build_slake_binary_surface(
+            args.inference,
+            args.references,
+            args.inference_output,
+            args.references_output,
+            args.report,
+            limit=args.limit,
+            max_per_image=args.max_per_image,
+            seed=args.seed,
         )
     else:
         report = quarantine_gate_candidates(

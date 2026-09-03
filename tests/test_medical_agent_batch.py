@@ -79,6 +79,7 @@ def _contract() -> dict:
         "stage": "test",
         "allowed_tools": ["inspect_overview"],
         "max_steps": 2,
+        "initial_visual_policy": "none",
     }
 
 

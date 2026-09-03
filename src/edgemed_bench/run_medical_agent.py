@@ -164,6 +164,7 @@ def run_agent_batch(
     contract: dict[str, Any],
     allowed_tools: tuple[str, ...],
     max_steps: int,
+    initial_visual_policy: str = "none",
     resume: bool = False,
     interrupt_after: int | None = None,
 ) -> dict[str, Any]:
@@ -245,6 +246,7 @@ def run_agent_batch(
                 run_dir / "tool_artifacts",
                 allowed_tools=allowed_tools,
                 max_steps=max_steps,
+                initial_visual_policy=initial_visual_policy,
             )
             checkpoint = {
                 "schema_version": "edgemed-medical-agent-sample-checkpoint/v1",
@@ -334,6 +336,9 @@ def main() -> None:
     parser.add_argument("--limit", type=int)
     parser.add_argument("--sample-id-file", type=Path)
     parser.add_argument("--max-steps", type=int, default=3)
+    parser.add_argument(
+        "--initial-visual-policy", choices=("none", "overview"), default="none"
+    )
     parser.add_argument("--decision-max-new-tokens", type=int, default=192)
     parser.add_argument("--final-max-new-tokens", type=int, default=512)
     parser.add_argument("--max-image-pixels", type=int, default=786_432)
@@ -374,6 +379,7 @@ def main() -> None:
         "generation": backend.receipt["generation"],
         "allowed_tools": list(args.tools),
         "max_steps": args.max_steps,
+        "initial_visual_policy": args.initial_visual_policy,
     }
     manifest = run_agent_batch(
         rows,
@@ -383,6 +389,7 @@ def main() -> None:
         contract=contract,
         allowed_tools=tuple(args.tools),
         max_steps=args.max_steps,
+        initial_visual_policy=args.initial_visual_policy,
         resume=args.resume,
     )
     print(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True))

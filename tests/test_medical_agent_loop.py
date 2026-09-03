@@ -115,6 +115,48 @@ def test_controller_records_non_region_box_canonicalization(tmp_path: Path) -> N
     assert final_message["policy_normalizations"] == result.prediction["policy_normalizations"]
 
 
+def test_initial_overview_is_visible_before_model_plans_region(tmp_path: Path) -> None:
+    class OverviewThenRegionBackend:
+        def decide(self, messages, tools):
+            completed = [message for message in messages if message["role"] == "tool"]
+            assert completed and completed[0]["name"] == "inspect_overview"
+            if len(completed) == 1:
+                return {
+                    "content": "Inspect the right half after seeing the overview.",
+                    "tool_call": {
+                        "name": "region_inspect",
+                        "arguments": {
+                            "media_id": "m1",
+                            "region_xyxy_1000": [500, 0, 1000, 1000],
+                            "target": "right-half fixture",
+                        },
+                    },
+                }
+            return {"content": "ready", "tool_call": None}
+
+        def finalize(self, messages, output_schema):
+            return {"sample_id": "s1", "answer": "A"}
+
+    result = run_medical_agent(
+        _sample(tmp_path), OverviewThenRegionBackend(), tmp_path, tmp_path / "artifacts",
+        allowed_tools=("inspect_overview", "region_inspect"), max_steps=2,
+        initial_visual_policy="overview",
+    )
+    assert [trace["tool_name"] for trace in result.tool_traces] == [
+        "inspect_overview", "region_inspect"
+    ]
+    assert result.trajectory["decision_calls"] == 2
+    assert result.trajectory["policy_interventions"] == 1
+
+
+def test_initial_overview_requires_enabled_tool(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="requires inspect_overview"):
+        run_medical_agent(
+            _sample(tmp_path), FixtureBackend(), tmp_path, tmp_path / "artifacts",
+            allowed_tools=("region_inspect",), initial_visual_policy="overview",
+        )
+
+
 def test_inference_row_rejects_reference_fields(tmp_path: Path) -> None:
     sample = _sample(tmp_path)
     sample["answer"] = "A"

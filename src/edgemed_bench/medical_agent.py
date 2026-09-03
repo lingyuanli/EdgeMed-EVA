@@ -90,11 +90,16 @@ def run_medical_agent(
     artifact_dir: Path,
     allowed_tools: tuple[str, ...] = tuple(TOOL_SCHEMAS),
     max_steps: int = 4,
+    initial_visual_policy: str = "none",
 ) -> AgentRunResult:
     """Run one sample without accepting any reference-bearing inference row."""
     reject_reference_fields([sample])
     if max_steps < 1:
         raise ValueError("max_steps must be positive")
+    if initial_visual_policy not in {"none", "overview"}:
+        raise ValueError(f"Unknown initial_visual_policy: {initial_visual_policy}")
+    if initial_visual_policy == "overview" and "inspect_overview" not in allowed_tools:
+        raise ValueError("initial overview policy requires inspect_overview in allowed_tools")
     executor = MedicalToolExecutor(
         sample=sample,
         data_root=data_root,
@@ -116,13 +121,36 @@ def run_medical_agent(
             },
         },
     ]
+    if initial_visual_policy == "overview":
+        initial_call = {"name": "inspect_overview", "arguments": {"sample_count": 1}}
+        messages.append(
+            {
+                "role": "assistant",
+                "content": "Acquire a low-resolution overview before planning targeted evidence.",
+                "tool_call": initial_call,
+                "policy_intervention": "initial_overview_required",
+            }
+        )
+        initial_result, initial_trace = executor.execute(
+            initial_call["name"], initial_call["arguments"]
+        )
+        messages.append(
+            {
+                "role": "tool",
+                "tool_call_id": initial_trace["trace_id"],
+                "name": initial_trace["tool_name"],
+                "content": initial_result,
+            }
+        )
     finish_reason = "max_steps"
     for _ in range(max_steps):
         turn = backend.decide(messages, {name: TOOL_SCHEMAS[name] for name in allowed_tools})
         if not isinstance(turn, dict):
             raise TypeError("Agent backend decision must be an object")
         tool_call = turn.get("tool_call")
-        assistant_message = {"role": "assistant", "content": turn.get("content", "")}
+        assistant_message = {
+            "role": "assistant", "content": turn.get("content", ""), "phase": "decision"
+        }
         if isinstance(turn.get("_model_call"), dict):
             assistant_message["model_call"] = turn["_model_call"]
         if tool_call is not None:
@@ -189,7 +217,12 @@ def run_medical_agent(
         "messages": messages,
         "tool_trace_ids": prediction["tool_trace_ids"],
         "finish_reason": finish_reason,
-        "decision_calls": sum(message["role"] == "assistant" and message.get("phase") != "final" for message in messages),
+        "decision_calls": sum(
+            message.get("phase") == "decision" for message in messages
+        ),
+        "policy_interventions": sum(
+            isinstance(message.get("policy_intervention"), str) for message in messages
+        ),
         "finalizer_calls": 1,
     }
     return AgentRunResult(prediction=prediction, trajectory=trajectory, tool_traces=executor.traces)

@@ -18,8 +18,11 @@ DECISION_CONTRACT = """Choose the next evidence action for this medical benchmar
 Return exactly one JSON object and no Markdown. Use one of these forms:
 {"content":"brief evidence gap","tool_call":{"name":"enabled tool","arguments":{}}}
 {"content":"evidence is sufficient","tool_call":null}
-The first decision must acquire visual evidence. Never call a tool outside ENABLED_TOOLS.
-For single-image media, do not call temporal_skim. A repeated request is invalid."""
+If no completed visual TOOL_RESULT exists, the first decision must acquire visual evidence.
+If a completed overview exists, inspect it before deciding: either stop if it is sufficient or
+request a question-relevant region smaller than the full frame with a concrete target. Never call
+a tool outside ENABLED_TOOLS. For single-image media, do not call temporal_skim. A repeated
+request is invalid."""
 
 FINAL_CONTRACT = """Produce the final evidence-grounded answer as exactly one JSON object and
 no Markdown. Copy every key and value type from OUTPUT_SCHEMA. In particular:

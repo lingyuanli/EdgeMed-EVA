@@ -10,6 +10,7 @@ from edgemed_bench.io import read_jsonl
 from edgemed_bench.prepare_external import (
     build_pmc_vqa,
     build_slake,
+    build_slake_binary_surface,
     extract_zip_safe,
     quarantine_gate_candidates,
     split_surfaces,
@@ -194,3 +195,48 @@ def test_quarantine_gate_candidates_preserves_but_excludes_records(tmp_path: Pat
     assert rows["flag"]["benchmark_overlap"] == "suspected"
     assert report["accepted"] == 1
     assert report["quarantined"] == 1
+
+
+def test_slake_binary_surface_selection_is_question_only_and_reference_isolated(
+    tmp_path: Path,
+) -> None:
+    inference = tmp_path / "source-inference.jsonl"
+    references = tmp_path / "source-references.jsonl"
+    rows = [
+        {
+            "sample_id": "s1", "kind": "open", "question": "Is a lesion visible?",
+            "image_path": "one.png", "image_sha256": "sha1",
+            "evaluation_metadata": {"answer_type": "CLOSED", "modality": "CT"},
+        },
+        {
+            "sample_id": "s2", "kind": "open", "question": "Is this T1 or T2?",
+            "image_path": "two.png", "image_sha256": "sha2",
+            "evaluation_metadata": {"answer_type": "CLOSED", "modality": "MRI"},
+        },
+        {
+            "sample_id": "s3", "kind": "open", "question": "What is visible?",
+            "image_path": "three.png", "image_sha256": "sha3",
+            "evaluation_metadata": {"answer_type": "OPEN", "modality": "XR"},
+        },
+    ]
+    inference.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    references.write_text(
+        json.dumps({"sample_id": "s1", "answer": "yes"}) + "\n"
+        + json.dumps({"sample_id": "s2", "answer": "t1"}) + "\n"
+        + json.dumps({"sample_id": "s3", "answer": "finding"}) + "\n"
+    )
+    output = tmp_path / "inference.jsonl"
+    output_references = tmp_path / "references.jsonl"
+    report = build_slake_binary_surface(
+        inference, references, output, output_references, tmp_path / "report.json",
+        limit=1, max_per_image=1,
+    )
+    selected = read_jsonl(output)
+    assert selected[0]["sample_id"] == "s1"
+    assert selected[0]["options"] == {"A": "Yes", "B": "No"}
+    assert selected[0]["modality"] == "CT"
+    assert "answer" not in selected[0]
+    assert read_jsonl(output_references) == [{"sample_id": "s1", "answer": "A"}]
+    assert oct(output_references.stat().st_mode & 0o777) == "0o600"
+    assert report["selection"]["answer_blind"] is True
+    assert report["eligible_before_image_cap"] == 1
